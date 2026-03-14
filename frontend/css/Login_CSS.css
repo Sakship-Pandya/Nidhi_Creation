@@ -1,0 +1,187 @@
+/* ══════════════════════════════
+   NIDHI CREATION — login.css
+   ══════════════════════════════ */
+
+:root {
+  --bg:      #f5f3ee;
+  --surface: #ffffff;
+  --border:  rgba(0,0,0,0.1);
+  --text:    #2c2c2c;
+  --muted:   #7a7065;
+  --red:     #c0392b;
+  --error:   #e74c3c;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+
+body {
+  min-height: 100%;
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* ── Page wrap ── */
+.page-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Card ── */
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2.5rem 2.8rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+}
+
+/* ── Brand ── */
+.brand {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.brand-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.brand-name em {
+  font-style: normal;
+  color: var(--red);
+}
+
+.brand-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 0.25rem;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 1.8rem;
+}
+
+/* ── Card title ── */
+.card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.card-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 1.8rem;
+}
+
+/* ── Fields ── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.2rem;
+}
+
+.field-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field-group input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  padding: 0.72rem 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field-group input::placeholder { color: #bbb5ad; }
+
+.field-group input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+  background: #fff;
+}
+
+.field-group input.invalid {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(231,76,60,0.08);
+}
+
+/* ── Field errors ── */
+.field-error {
+  font-size: 0.75rem;
+  color: var(--error);
+  min-height: 1em;
+}
+
+/* ── Submit button ── */
+.submit-btn {
+  width: 100%;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.85rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #a93226;
+  transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Form note ── */
+.form-note {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--error);
+  margin-top: 0.9rem;
+  min-height: 1.1em;
+}
+
+.form-note.success { color: #27ae60; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+  body { padding: 1rem 0.75rem; align-items: flex-start; padding-top: 2rem; }
+  .login-card { padding: 2rem 1.5rem; border-radius: 8px; }
+  .brand-name { font-size: 1.7rem; }
+  .card-title { font-size: 1.4rem; }
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="page-title">Category — Nidhi Creation</title>
+  <link rel="stylesheet" href="../css/Category_CSS.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="site-nav" id="site-nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand" id="nav-brand">Nidhi <em>Creation</em></a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/#works" id="nav-link-work">Our Work</a></li>
+        <li><a href="/contact" id="nav-link-contact">Contact</a></li>
+      </ul>
+      <button class="hamburger" id="nav-hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <main class="main-wrap" id="main-content">
+
+    <!-- Category header -->
+    <div class="cat-header" id="cat-header">
+      <a href="/" class="back-link" id="cat-back-link">← All Categories</a>
+      <p class="brand-eyebrow" id="cat-brand-eyebrow">Nidhi <em>Creation</em></p>
+      <h1 class="cat-title" id="cat-title"><!-- injected by JS --></h1>
+      <p class="cat-desc"  id="cat-description"><!-- injected by JS --></p>
+      <p class="cat-count" id="cat-item-count"><!-- e.g. "12 projects" --></p>
+    </div>
+
+    <!-- STATE: Loading skeletons -->
+    <div id="state-loading" class="state-wrap">
+      <div class="items-grid" id="skeleton-grid">
+        <!-- 6 skeleton cards -->
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+        <div class="item-card skeleton-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line"></div><div class="skeleton skel-line short"></div><div class="skeleton skel-line xshort"></div></div></div>
+      </div>
+    </div>
+
+    <!-- STATE: Items -->
+    <div id="state-items" class="state-wrap hidden">
+      <div class="items-grid" id="items-grid">
+        <!-- Project cards injected here by JS
+             Each card gets id="card-{project.id}"
+             e.g. id="card-proj_001"
+        -->
+      </div>
+    </div>
+
+    <!-- STATE: Empty -->
+    <div id="state-empty" class="state-wrap hidden">
+      <div class="empty-state" id="empty-state-box">
+        <div class="empty-icon" id="empty-icon">◈</div>
+        <h3 id="empty-title">No projects yet</h3>
+        <p  id="empty-message">We're adding work to this category soon. Check back later!</p>
+        <a href="/" class="btn-secondary" id="empty-home-link">Go Home</a>
+      </div>
+    </div>
+
+    <!-- STATE: Error -->
+    <div id="state-error" class="state-wrap hidden">
+      <div class="empty-state" id="error-state-box">
+        <div class="empty-icon error" id="error-icon">✕</div>
+        <h3 id="error-title">Something went wrong</h3>
+        <p  id="error-message">Could not load this category.</p>
+        <button class="btn-secondary" id="btn-retry">Retry</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── MODAL (project detail) ── -->
+  <div class="modal-overlay hidden" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card" id="modal-card">
+
+      <button class="modal-close" id="modal-close" aria-label="Close modal">✕</button>
+
+      <!-- Image -->
+      <div class="modal-img-wrap" id="modal-img-wrap">
+        <img id="modal-img" src="" alt="Project image"/>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body" id="modal-body">
+        <span class="modal-category-tag" id="modal-category-tag"><!-- category --></span>
+        <h2  class="modal-title"        id="modal-title"><!-- title --></h2>
+        <p   class="modal-description"  id="modal-description"><!-- description --></p>
+        <p   class="modal-age"          id="modal-age"><!-- e.g. "2 months ago" --></p>
+        <a   class="modal-cta"          id="modal-cta" href="/contact">Enquire About This</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../js/Category.js"></script>
+</body>
+</html>
