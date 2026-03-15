@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formNote.textContent = 'Logged in! Redirecting…';
         formNote.classList.add('success');
         // Redirect to homepage after short delay
-        setTimeout(() => { window.location.href = '/'; }, 800);
+        setTimeout(() => { window.location.href = '/home'; }, 800);
       } else if (res.status === 401) {
         formNote.textContent = 'Details not recognised. Please try again.';
         submitBtn.disabled = false;
