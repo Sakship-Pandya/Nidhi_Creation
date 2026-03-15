@@ -1,4 +1,3 @@
-
 Copy
 
 <!DOCTYPE html>
@@ -105,36 +104,34 @@ Copy
   <section class="works-section" id="works">
     <div class="works-header">
       <h2>Past Works</h2>
-      <a href="/portfolio" class="view-all">View all →</a>
     </div>
- 
-    <div class="works-grid">
-      <div class="work-card">
-        <div class="work-img work-neon"><span>CAFÉ</span></div>
-        <div class="work-info"><h4>Café Lumière</h4><span>Neon Sign</span></div>
-      </div>
-      <div class="work-card">
-        <div class="work-img work-3d"><span>ABC</span></div>
-        <div class="work-info"><h4>RetailMax</h4><span>3D Letter Sign</span></div>
-      </div>
-      <div class="work-card">
-        <div class="work-img work-metal"><span>⬟</span></div>
-        <div class="work-info"><h4>The Grand Hotel</h4><span>Metal Sign</span></div>
-      </div>
-      <div class="work-card">
-        <div class="work-img work-glow"><span>✦</span></div>
-        <div class="work-info"><h4>Spark Studio</h4><span>Glow Signboard</span></div>
-      </div>
-      <div class="work-card">
-        <div class="work-img work-acrylic"><span>◇</span></div>
-        <div class="work-info"><h4>MedPlus Clinic</h4><span>Acrylic Signage</span></div>
-      </div>
-      <div class="work-card">
-        <div class="work-img work-led"><span>◎</span></div>
-        <div class="work-info"><h4>City Mall</h4><span>LED Display Board</span></div>
-      </div>
+
+    <!-- Loading skeletons shown until API responds -->
+    <div class="works-grid" id="worksGrid">
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
+      <div class="work-card skeleton-card"><div class="work-img skeleton"></div><div class="work-info"><div class="skel-line skeleton"></div><div class="skel-line short skeleton"></div></div></div>
     </div>
   </section>
+
+  <!-- PROJECT MODAL -->
+  <div class="modal-overlay hidden" id="worksModal">
+    <div class="modal-card" id="worksModalCard">
+      <button class="modal-close" id="worksModalClose" aria-label="Close">&#x2715;</button>
+      <div class="modal-img-wrap">
+        <img id="worksModalImg" src="" alt=""/>
+      </div>
+      <div class="modal-body">
+        <span class="modal-category-tag" id="worksModalCat"></span>
+        <h2 class="modal-title" id="worksModalTitle"></h2>
+        <p class="modal-description" id="worksModalDesc"></p>
+        <a class="modal-cta" href="/contact">Enquire About This</a>
+      </div>
+    </div>
+  </div>
  
   <footer>
     <p>© 2025 Nidhi Creation, Ahmedabad.</p>
