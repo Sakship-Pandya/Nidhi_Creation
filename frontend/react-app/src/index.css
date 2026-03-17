@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg:        #f5f3ee;
+    --surface:   #ffffff;
+    --border:    rgba(0,0,0,0.1);
+    --text:      #2c2c2c;
+    --muted:     #7a7065;
+    --red:       #c0392b;
+    --red-dark:  #a93226;
+    --blue:      #2980b9;
+    --green:     #27ae60;
+    --error:     #e74c3c;
+    --nav-h:     64px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  a { text-decoration: none; color: inherit; }
+}
+
+@layer components {
+  /* ── Shared form field ── */
+  .nc-input {
+    @apply w-full rounded bg-[var(--bg)] border border-[rgba(0,0,0,0.1)] text-[var(--text)] font-dm text-[0.95rem] px-4 py-[0.72rem] outline-none transition-all;
+  }
+  .nc-input::placeholder { color: #bbb5ad; }
+  .nc-input:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(192,57,43,0.08);
+    background: #fff;
+  }
+  .nc-input.invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(231,76,60,0.08);
+  }
+
+  /* ── Primary button ── */
+  .nc-btn {
+    @apply w-full bg-[var(--red)] text-white border-none rounded font-dm font-semibold text-[0.9rem] tracking-wide py-[0.85rem] cursor-pointer transition-all;
+  }
+  .nc-btn:hover:not(:disabled) {
+    background: var(--red-dark);
+    transform: translateY(-1px);
+  }
+  .nc-btn:disabled { @apply opacity-60 cursor-not-allowed; transform: none; }
+
+  /* ── Field label ── */
+  .nc-label {
+    @apply text-[0.75rem] font-medium tracking-widest uppercase text-[var(--muted)];
+  }
+
+  /* ── Field error ── */
+  .nc-error {
+    @apply text-[0.75rem] text-[var(--error)] min-h-[1em];
+  }
+
+  /* ── Skeleton shimmer ── */
+  .skeleton {
+    background: linear-gradient(90deg, #ece9e3 25%, #f5f3ee 50%, #ece9e3 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+  }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+@keyframes neonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.75; }
+}
