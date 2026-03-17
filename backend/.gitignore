@@ -40,3 +40,8 @@ __pycache__/
 backend/logs
 logs/
 backend/test.db
+
+node_modules/
+frontend/react-app/node_modules/
+dist/
+.env
