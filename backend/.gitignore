@@ -1,46 +1,23 @@
 # ---- Environment files ----
 .env
 .env.*
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 backend/.env
 
-# ---- Python ----
+# ---- Python cache ----
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.db
-*.sqlite3
-.venv/
+
+# ---- Virtual environment ----
 venv/
 ENV/
 env/
-
-# ---- Python cache / tools ----
-.pytest_cache/
-.mypy_cache/
-coverage/
-htmlcov/
-
-# ---- Logs ----
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# ---- Node ----
-node_modules/
-frontend/react-app/node_modules/
-
-# ---- Build outputs ----
-dist/
-build/
-frontend/react-app/dist/
-frontend/react-app/build/
+Lib/
+Scripts/
+bin/
+include/
+pyvenv.cfg
 
 # ---- VS Code ----
 .vscode/
@@ -49,7 +26,25 @@ frontend/react-app/build/
 .DS_Store
 Thumbs.db
 
-# ---- Project specific ----
-backend/logs/
+# ---- Test cache ----
+.pytest_cache/
+.mypy_cache/
+
+# ---- Logs ----
+*.log
+
+__pycache__/
+*.pyc
+.venv/
+
+backend/logs
 logs/
 backend/test.db
+
+node_modules/
+frontend/react-app/node_modules/
+dist/
+.env
+
+frontend/react-app/dist/
+frontend/react-app/node_modules/

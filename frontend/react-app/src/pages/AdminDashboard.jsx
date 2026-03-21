@@ -5,13 +5,6 @@ import { api } from '../api/index.js'
 /* ════════════════════════════
    SHARED HELPERS
 ════════════════════════════ */
-const CATEGORY_LABELS = {
-  neon: 'Neon Signs', '3d': '3D Letter Signs', led: 'LED Display Boards',
-  flex: 'Flex & Vinyl', acrylic: 'Acrylic Signage', metal: 'Metal Signs',
-  wooden: 'Wooden Boards', glow: 'Glow Signboards',
-}
-
-const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([slug, name]) => ({ slug, name }))
 
 function Badge({ visible }) {
   return (
@@ -89,11 +82,7 @@ function NcTextarea({ label, error, rows = 3, ...props }) {
   return (
     <div className="flex flex-col gap-1 mb-4">
       {label && <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">{label}</label>}
-      <textarea
-        rows={rows}
-        className={`nc-input resize-y${error ? ' invalid' : ''}`}
-        {...props}
-      />
+      <textarea rows={rows} className={`nc-input resize-y${error ? ' invalid' : ''}`} {...props} />
       {error && <p className="text-[0.72rem] text-[var(--error)]">{error}</p>}
     </div>
   )
@@ -192,7 +181,7 @@ function Toast({ msg, type, onClear }) {
 /* ════════════════════════════
    PROJECTS SECTION
 ════════════════════════════ */
-function ProjectsSection({ toast }) {
+function ProjectsSection({ toast, categories }) {
   const [projects, setProjects]   = useState([])
   const [search, setSearch]       = useState('')
   const [catFilter, setCatFilter] = useState('')
@@ -243,8 +232,8 @@ function ProjectsSection({ toast }) {
 
   function validate() {
     const e = {}
-    if (!form.title.trim())        e.title = 'Title is required.'
-    if (!form.category_slug)       e.category_slug = 'Please select a category.'
+    if (!form.title.trim())    e.title = 'Title is required.'
+    if (!form.category_slug)   e.category_slug = 'Please select a category.'
     return e
   }
 
@@ -287,6 +276,8 @@ function ProjectsSection({ toast }) {
     finally { setDeleting(false) }
   }
 
+  const getCategoryName = (slug) => categories.find(c => c.slug === slug)?.name || slug
+
   const filtered = projects.filter(p => {
     const ms = !search    || p.title.toLowerCase().includes(search.toLowerCase())
     const mc = !catFilter || p.category_slug === catFilter
@@ -316,7 +307,7 @@ function ProjectsSection({ toast }) {
         </div>
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-[0.6rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] transition-all">
           <option value="">All Categories</option>
-          {CATEGORY_OPTIONS.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
         </select>
         <select value={visFilter} onChange={e => setVisFilter(e.target.value)} className="px-3 py-[0.6rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] transition-all">
           <option value="">All Status</option>
@@ -351,7 +342,7 @@ function ProjectsSection({ toast }) {
               <strong className="text-[var(--text)]">{p.title}</strong>
               {p.description && <><br/><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0,60)}{p.description.length > 60 ? '…' : ''}</span></>}
             </td>
-            <td className="px-4 py-3 text-[var(--muted)]">{CATEGORY_LABELS[p.category_slug] || p.category_slug}</td>
+            <td className="px-4 py-3 text-[var(--muted)]">{getCategoryName(p.category_slug)}</td>
             <td className="px-4 py-3"><Badge visible={p.is_visible}/></td>
             <td className="px-4 py-3">
               <div className="flex gap-2">
@@ -385,7 +376,7 @@ function ProjectsSection({ toast }) {
             <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Category</label>
             <select value={form.category_slug} onChange={e => setForm(f => ({...f, category_slug: e.target.value}))} className={`nc-input${errors.category_slug ? ' invalid' : ''}`}>
               <option value="">Select category…</option>
-              {CATEGORY_OPTIONS.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+              {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
             </select>
             {errors.category_slug && <p className="text-[0.72rem] text-[var(--error)]">{errors.category_slug}</p>}
           </div>
@@ -434,6 +425,10 @@ function CategoriesSection({ toast }) {
 
   useEffect(() => { load() }, [])
 
+  function autoSlug(name) {
+    return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  }
+
   function openAdd() {
     setEditingId(null)
     setForm({ name: '', slug: '', description: '', is_visible: true })
@@ -446,10 +441,6 @@ function CategoriesSection({ toast }) {
     setForm({ name: c.name, slug: c.slug, description: c.description || '', is_visible: c.is_visible })
     setErrors({})
     setModalOpen(true)
-  }
-
-  function autoSlug(name) {
-    return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   }
 
   function validate() {
@@ -466,9 +457,10 @@ function CategoriesSection({ toast }) {
     setSaving(true)
     try {
       const body = {
-        slug: form.slug.trim(), name: form.name.trim(),
-        description: form.description.trim(),
-        is_visible: form.is_visible ? 'true' : 'false',
+        slug:          form.slug.trim(),
+        name:          form.name.trim(),
+        description:   form.description.trim(),
+        is_visible:    form.is_visible ? 'true' : 'false',
         display_order: editingId
           ? String(categories.find(c => c.id === editingId)?.display_order ?? categories.length)
           : String(categories.length),
@@ -514,7 +506,6 @@ function CategoriesSection({ toast }) {
         headers={[
           { label: 'Order', style: { width: 60 } },
           { label: 'Name' },
-          { label: 'Slug' },
           { label: 'Description' },
           { label: 'Status', style: { width: 90 } },
           { label: 'Actions', style: { width: 110 } },
@@ -525,9 +516,6 @@ function CategoriesSection({ toast }) {
           <tr key={c.id} className="border-b border-[var(--border)] hover:bg-black/[0.015] transition-colors last:border-0">
             <td className="px-4 py-3 text-[var(--muted)] text-[0.82rem]">{c.display_order + 1}</td>
             <td className="px-4 py-3"><strong>{c.name}</strong></td>
-            <td className="px-4 py-3">
-              <code className="text-[0.8rem] bg-[var(--bg)] border border-[var(--border)] px-2 py-[0.15rem] rounded">{c.slug}</code>
-            </td>
             <td className="px-4 py-3 text-[0.85rem] text-[var(--muted)]">{c.description ? c.description.slice(0,60) + (c.description.length > 60 ? '…' : '') : '—'}</td>
             <td className="px-4 py-3"><Badge visible={c.is_visible}/></td>
             <td className="px-4 py-3">
@@ -555,24 +543,22 @@ function CategoriesSection({ toast }) {
           </button>
         </>}
       >
-        <div className="grid grid-cols-2 gap-4">
+        <NcInput
+          label="Category Name"
+          placeholder="e.g. Neon Signs"
+          value={form.name}
+          onChange={e => {
+            const name = e.target.value
+            setForm(f => ({ ...f, name, slug: editingId ? f.slug : autoSlug(name) }))
+            setErrors(er => ({...er, name: ''}))
+          }}
+          error={errors.name}
+        />
+        {/* Slug is hidden but auto-generated and sent to backend */}
+        <div className="hidden">
           <NcInput
-            label="Category Name"
-            placeholder="e.g. Neon Signs"
-            value={form.name}
-            onChange={e => {
-              const name = e.target.value
-              setForm(f => ({ ...f, name, slug: editingId ? f.slug : autoSlug(name) }))
-              setErrors(er => ({...er, name: ''}))
-            }}
-            error={errors.name}
-          />
-          <NcInput
-            label={<>Slug <span className="text-[0.68rem] text-[#bbb5ad] font-normal normal-case tracking-normal">(URL-safe)</span></>}
-            placeholder="e.g. neon"
             value={form.slug}
             onChange={e => { setForm(f => ({...f, slug: e.target.value})); setErrors(er => ({...er, slug: ''})) }}
-            error={errors.slug}
           />
         </div>
         <NcTextarea label="Description" placeholder="Brief description shown on the category page…" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))}/>
@@ -644,7 +630,6 @@ function ContactSection({ toast }) {
       </div>
 
       <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 items-start">
-        {/* Business details */}
         <div className="bg-white border border-[var(--border)] rounded-xl p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           <h3 className="font-bebas text-[1.2rem] tracking-[0.04em] text-[var(--text)] mb-5">Business Details</h3>
           {inp('phone',         'Phone Number',  'tel',   '+91 98765 43210')}
@@ -656,7 +641,6 @@ function ContactSection({ toast }) {
           {inp('working_hours', 'Working Hours', 'text',  'Mon – Sat: 9:00 AM – 7:00 PM')}
         </div>
 
-        {/* Maps embed */}
         <div className="bg-white border border-[var(--border)] rounded-xl p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           <h3 className="font-bebas text-[1.2rem] tracking-[0.04em] text-[var(--text)] mb-5">Google Maps Embed</h3>
           <div className="flex flex-col gap-1 mb-3">
@@ -765,10 +749,17 @@ const NAV_ITEMS = [
 ]
 
 export default function AdminDashboard() {
-  const navigate        = useNavigate()
+  const navigate              = useNavigate()
   const [active, setActive]   = useState('projects')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [toast, setToast]     = useState({ msg: '', type: 'success' })
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => {
+    api('GET', '/api/admin/categories')
+      .then(d => setCategories(d.categories || []))
+      .catch(() => {})
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -783,9 +774,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
-
-      {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--text)] flex flex-col z-[100] transition-transform duration-300 max-[900px]:${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--text)] flex flex-col z-[100] transition-transform duration-300`}
         style={{ transform: sidebarOpen || window.innerWidth > 900 ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         <div className="px-6 py-5 border-b border-white/[0.08] flex-shrink-0">
@@ -819,20 +808,13 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
-      {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/40 z-[99] md:hidden" onClick={() => setSidebarOpen(false)}/>
       )}
 
-      {/* Main */}
       <main className="flex-1 flex flex-col" style={{ marginLeft: window.innerWidth > 900 ? 220 : 0 }}>
-
-        {/* Topbar */}
         <header className="sticky top-0 h-14 bg-[rgba(245,243,238,0.95)] backdrop-blur-md border-b border-[var(--border)] flex items-center gap-4 px-7 z-50 flex-shrink-0">
-          <button
-            className="md:hidden flex flex-col gap-1 bg-transparent border-none cursor-pointer p-2"
-            onClick={() => setSidebarOpen(s => !s)}
-          >
+          <button className="md:hidden flex flex-col gap-1 bg-transparent border-none cursor-pointer p-2" onClick={() => setSidebarOpen(s => !s)}>
             <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
             <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
             <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
@@ -844,9 +826,8 @@ export default function AdminDashboard() {
           </span>
         </header>
 
-        {/* Section content */}
         <div className="p-7 max-sm:p-4 flex-1">
-          {active === 'projects'   && <ProjectsSection   toast={showToast} />}
+          {active === 'projects'   && <ProjectsSection   toast={showToast} categories={categories} />}
           {active === 'categories' && <CategoriesSection toast={showToast} />}
           {active === 'contact'    && <ContactSection    toast={showToast} />}
           {active === 'visitors'   && <VisitorsSection   toast={showToast} />}

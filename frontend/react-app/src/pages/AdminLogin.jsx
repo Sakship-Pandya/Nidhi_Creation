@@ -50,6 +50,7 @@ export default function AdminLogin() {
     setLoading(true)
 
     try {
+      console.log('Sending:', form)
       await api('POST', '/admin/login', form)
       setNote({ msg: 'Access granted. Redirecting…', success: true })
       setTimeout(() => navigate('/admin/dashboard'), 800)
