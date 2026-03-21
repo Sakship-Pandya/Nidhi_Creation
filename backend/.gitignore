@@ -43,7 +43,6 @@ backend/test.db
 
 node_modules/
 frontend/react-app/node_modules/
-dist/
 .env
 
 frontend/react-app/dist/
