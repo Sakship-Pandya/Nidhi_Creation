@@ -310,7 +310,7 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
         WHERE  is_visible = TRUE
         ORDER  BY created_at DESC
         LIMIT  %s
-        """,
+        """,    
         (limit,)
     )
     rows = cur.fetchall()

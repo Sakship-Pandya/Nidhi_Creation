@@ -1,8 +1,8 @@
 # ══════════════════════════════════════════
 # NIDHI CREATION — routes/admin_auth.py
 # Admin login / logout
-# POST /admin/login
-# POST /admin/logout
+# POST /api/admin/login
+# POST /api/admin/logout
 # ══════════════════════════════════════════
 
 from database.modal import verify_admin_password
@@ -13,10 +13,10 @@ from core.auth      import (
 
 
 def handle(method: str, path: str, body: dict, headers, respond):
-    if path == '/admin/login' and method == 'POST':
+    if path == '/api/admin/login' and method == 'POST':
         _login(body, respond)
 
-    elif path == '/admin/logout' and method == 'POST':
+    elif path == '/api/admin/logout' and method == 'POST':
         _logout(headers, respond)
 
     else:

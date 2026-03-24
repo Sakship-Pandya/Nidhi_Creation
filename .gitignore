@@ -1,5 +1,7 @@
 # ---- Environment files ----
 .env
+.env.development
+.env.production
 .env.*
 backend/.env
 

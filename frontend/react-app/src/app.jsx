@@ -16,7 +16,7 @@ export default function App() {
       <Route path="/admin/login"       element={<AdminLogin />} />
       <Route path="/admin/dashboard"   element={<AdminDashboard />} />
       {/* Catch-all */}
-      <Route path="*"                  element={<Navigate to="/" replace />} />
+      <Route path="*" element={<h1>404 Not Found</h1>} />
     </Routes>
   )
-}
+} 

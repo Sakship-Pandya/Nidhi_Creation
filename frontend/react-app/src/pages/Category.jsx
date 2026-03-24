@@ -52,6 +52,7 @@ function ProjectModal({ project, onClose }) {
 }
 
 export default function Category() {
+  const { slug } = useParams() 
   const [state, setState]     = useState('loading')  // loading | items | empty | error
   const [category, setCategory] = useState(null)
   const [projects, setProjects] = useState([])

@@ -7,11 +7,7 @@ export default defineConfig({
   // In dev: proxy all /api and backend routes to Python server
   server: {
     proxy: {
-      '/api':          'http://localhost:8000',
-      '/login':        'http://localhost:8000',
-      '/admin':        'http://localhost:8000',
-      '/category':     'http://localhost:8000',
-      '/contact':      'http://localhost:8000',
+      '/api':          'http://localhost:8000'
     }
   },
 
@@ -19,4 +15,4 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   }
-})
+})  

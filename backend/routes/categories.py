@@ -4,6 +4,7 @@
 #
 # GET  /api/categories                 ← public: all visible categories
 # GET  /api/category/<slug>            ← public: single category + its projects
+# GET  /api/recent-projects            ← public: recent projects for home page
 # GET  /api/admin/categories           ← admin: all categories (incl. hidden)
 # POST /api/admin/categories           ← admin: add
 # PUT  /api/admin/categories/<id>      ← admin: edit
@@ -15,7 +16,7 @@ import json
 from core.auth      import get_token_from_headers, validate_session
 from database.modal import (
     get_all_categories, get_category_by_slug,
-    get_projects_by_category,
+    get_projects_by_category, get_recent_projects,
     add_category, update_category,
     delete_category, reorder_categories,
 )
@@ -26,6 +27,10 @@ def handle(method: str, path: str, body: dict, headers, respond):
     # ── Public routes ────────────────────
     if method == 'GET' and path == '/api/categories':
         _list_public(respond)
+        return
+
+    if method == 'GET' and path == '/api/recent-projects':
+        _recent_projects(respond)
         return
 
     if method == 'GET' and path.startswith('/api/category/'):
@@ -77,6 +82,15 @@ def _list_public(respond):
     except Exception as e:
         print(f'[categories] list error: {e}')
         respond(500, 'application/json', {'error': 'Could not fetch categories.'})
+
+
+def _recent_projects(respond):
+    try:
+        projects = get_recent_projects(limit=6)
+        respond(200, 'application/json', {'projects': projects})
+    except Exception as e:
+        print(f'[categories] recent projects error: {e}')
+        respond(500, 'application/json', {'error': 'Could not fetch recent projects.'})
 
 
 def _get_single(slug: str, respond):
