@@ -90,9 +90,6 @@ export default function AdminLogin() {
 
           <hr className="border-[var(--border)] mb-7"/>
 
-          <h1 className="font-bebas text-[1.6rem] tracking-[0.04em] text-[var(--text)] mb-1">Admin Login</h1>
-          <p className="text-[0.8rem] text-[var(--muted)] mb-7">Restricted access — authorised personnel only</p>
-
           <form onSubmit={handleSubmit} noValidate>
 
             {/* Username */}

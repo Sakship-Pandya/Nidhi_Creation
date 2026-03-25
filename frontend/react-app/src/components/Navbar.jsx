@@ -25,11 +25,9 @@ export default function Navbar() {
         console.error('Failed to fetch categories', err)
       }
     }
-
     fetchCategories()
   }, [])
 
-  // Close desktop dropdown on outside click
   useEffect(() => {
     const close = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false)
@@ -38,14 +36,21 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  // Close on resize to desktop
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) { setMenuOpen(false); setDropOpen(false) } }
+    const onResize = () => {
+      if (window.innerWidth >= 768) {
+        setMenuOpen(false)
+        setDropOpen(false)
+      }
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const closeAll = () => { setMenuOpen(false); setDropOpen(false) }
+  const closeAll = () => {
+    setMenuOpen(false)
+    setDropOpen(false)
+  }
 
   return (
     <>
@@ -61,68 +66,99 @@ export default function Navbar() {
             Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
           </Link>
 
-          {/* Desktop — categories dropdown only */}
-          <div className="hidden md:block relative" ref={dropRef}
-            onMouseEnter={() => { clearTimeout(hoverTimer.current); setDropOpen(true) }}
-            onMouseLeave={() => { hoverTimer.current = setTimeout(() => setDropOpen(false), 150) }}
-          >
-            <button
-              className="flex items-center gap-1 text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all bg-transparent border-none cursor-pointer"
-              onClick={() => setDropOpen(d => !d)}
-              aria-expanded={dropOpen}
-              aria-haspopup="true"
-            >
-              Categories
-              <span className={`text-base leading-none transition-transform duration-200 inline-block ${dropOpen ? 'rotate-180' : ''}`}>⌄</span>
-            </button>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-3">
 
-            {dropOpen && (
-              <ul className="absolute top-[calc(100%+6px)] right-0 min-w-[200px] bg-white border border-[var(--border)] rounded-lg list-none py-2 shadow-[0_8px_24px_rgba(0,0,0,0.1)] z-50">
-                {categories.map(c => (
-                  <li key={c.slug}>
-                    <Link
-                      to={`/category/${c.slug}`}
-                      className="block text-[0.84rem] text-[var(--muted)] px-4 py-2 hover:text-[var(--red)] hover:bg-black/[0.03] transition-all"
-                      onClick={() => setDropOpen(false)}
-                    >
-                      {c.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {/* Categories ONLY wrapper */}
+            <div
+              className="relative"
+              ref={dropRef}
+              onMouseEnter={() => {
+                clearTimeout(hoverTimer.current)
+                setDropOpen(true)
+              }}
+              onMouseLeave={() => {
+                hoverTimer.current = setTimeout(() => setDropOpen(false), 150)
+              }}
+            >
+              {/* Categories */}
+              <button
+                className="flex items-center gap-1 text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all bg-transparent border-none cursor-pointer"
+                onClick={() => setDropOpen(d => !d)}
+                aria-expanded={dropOpen}
+              >
+                Categories
+                <span className={`text-base transition-transform ${dropOpen ? 'rotate-180' : ''}`}>⌄</span>
+              </button>
+
+              {/* Dropdown */}
+              {dropOpen && (
+                <ul className="absolute top-[calc(100%+6px)] right-0 min-w-[200px] bg-white border border-[var(--border)] rounded-lg py-2 shadow-[0_8px_24px_rgba(0,0,0,0.1)] z-50">
+                  {categories.map(c => (
+                    <li key={c.slug}>
+                      <Link
+                        to={`/category/${c.slug}`}
+                        className="block text-[0.84rem] text-[var(--muted)] px-4 py-2 hover:text-[var(--red)] hover:bg-black/[0.03] transition-all"
+                        onClick={() => setDropOpen(false)}
+                      >
+                        {c.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Contact (NOW independent) */}
+            <Link
+              to="/contact"
+              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all"
+            >
+              Contact Us
+            </Link>
+
           </div>
 
-          {/* Mobile — hamburger only */}
+          {/* Mobile Menu Button */}
           <button
             className="md:hidden flex flex-col gap-[5px] bg-transparent border-none cursor-pointer p-2"
             onClick={() => setMenuOpen(m => !m)}
             aria-label="Toggle menu"
-            aria-expanded={menuOpen}
           >
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] rounded transition-all duration-[250ms] ${menuOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] rounded transition-all duration-[250ms] ${menuOpen ? 'opacity-0 scale-x-0' : ''}`} />
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] rounded transition-all duration-[250ms] ${menuOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
           </button>
 
         </div>
       </nav>
 
-      {/* Mobile off-canvas — flat category list only */}
+      {/* Mobile Menu */}
       {menuOpen && (
-        <div className="fixed top-16 left-0 right-0 z-[199] bg-[rgba(245,243,238,0.99)] border-b border-[var(--border)] shadow-[0_8px_16px_rgba(0,0,0,0.06)] md:hidden overflow-y-auto max-h-[calc(100vh-64px)]">
-          <ul className="list-none flex flex-col px-6 py-3">
+        <div className="fixed top-16 left-0 right-0 z-[199] bg-[rgba(245,243,238,0.99)] border-b border-[var(--border)] shadow md:hidden">
+          <ul className="flex flex-col px-6 py-3">
             {categories.map(c => (
               <li key={c.slug}>
                 <Link
                   to={`/category/${c.slug}`}
-                  className="block text-[0.9rem] text-[var(--muted)] py-3 border-b border-[var(--border)] hover:text-[var(--red)] transition-colors"
+                  className="block text-[0.9rem] text-[var(--muted)] py-3 border-b border-[var(--border)] hover:text-[var(--red)]"
                   onClick={closeAll}
                 >
                   {c.name}
                 </Link>
               </li>
             ))}
+
+            {/* Contact in mobile */}
+            <li>
+              <Link
+                to="/contact"
+                className="block text-[0.9rem] text-[var(--muted)] py-3 hover:text-[var(--red)]"
+                onClick={closeAll}
+              >
+                Contact Us
+              </Link>
+            </li>
           </ul>
         </div>
       )}

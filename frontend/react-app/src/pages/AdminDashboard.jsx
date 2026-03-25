@@ -127,12 +127,12 @@ function ImageUpload({ preview, onFile }) {
 ════════════════════════════ */
 function Table({ headers, children, empty }) {
   return (
-    <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden">
+    <div className="bg-white border border-[var(--border)] rounded-lg overflow-hidden overflow-x-auto">
       <table className="w-full border-collapse text-[0.875rem]">
         <thead>
           <tr className="bg-[var(--bg)] border-b border-[var(--border)]">
             {headers.map((h, i) => (
-              <th key={i} className="px-4 py-3 text-left text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] whitespace-nowrap" style={h.style}>
+              <th key={i} className="px-4 py-3 text-left text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] whitespace-normal break-words" style={h.style}>
                 {h.label}
               </th>
             ))}
