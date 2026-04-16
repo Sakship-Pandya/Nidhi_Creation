@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api/index.js'
 
 function timeAgo(dateStr) {
@@ -17,12 +17,41 @@ function timeAgo(dateStr) {
 }
 
 function ProjectModal({ project, onClose }) {
+  const [images, setImages] = useState(
+    project.cover_url ? [{ url: project.cover_url }] : []
+  )
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [contactPhone, setContactPhone] = useState('')
+
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e) => { 
+      if (e.key === 'Escape') onClose() 
+      if (e.key === 'ArrowRight') setCurrentIndex(i => (i + 1) % images.length)
+      if (e.key === 'ArrowLeft') setCurrentIndex(i => (i - 1 + images.length) % images.length)
+    }
     document.addEventListener('keydown', onKey)
-    return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey) }
-  }, [])
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose, images.length])
+
+  useEffect(() => {
+    api('GET', `/api/project/${project.id}/images`)
+      .then(d => {
+        if (d.images && d.images.length > 0) setImages(d.images)
+      })
+      .catch(console.error)
+
+    api('GET', '/api/contact')
+      .then(d => {
+        if (d.contact && d.contact.phone) {
+          setContactPhone(d.contact.phone.replace(/\D/g, ''))
+        }
+      })
+      .catch(console.error)
+  }, [project.id])
 
   return (
     <div
@@ -32,19 +61,50 @@ function ProjectModal({ project, onClose }) {
       <div className="bg-white rounded-xl w-full max-w-[620px] max-h-[90vh] overflow-y-auto relative shadow-[0_24px_64px_rgba(0,0,0,0.2)]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/[0.07] border-none flex items-center justify-center cursor-pointer hover:bg-black/10 transition-all z-10 text-sm"
-        >✕</button>
-        <div className="w-full aspect-[4/3] overflow-hidden rounded-t-xl bg-[var(--bg)]">
-          <img src={project.image_url} alt={project.title} className="w-full h-full object-cover"/>
-        </div>
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/40 text-white border-none flex items-center justify-center cursor-pointer hover:bg-[var(--red)] transition-all z-20 text-lg"
+        >
+          ✕
+        </button>
+
+        {images.length > 0 ? (
+          <div className="w-full aspect-[4/3] relative overflow-hidden rounded-t-xl bg-[var(--bg)] group">
+            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover"/>
+            
+            {images.length > 1 && (
+              <>
+                <button onClick={() => setCurrentIndex(i => (i - 1 + images.length) % images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button onClick={() => setCurrentIndex(i => (i + 1) % images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {images.map((_, idx) => (
+                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`}/>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="w-full aspect-[4/3] rounded-t-xl bg-[var(--bg)] flex items-center justify-center text-5xl text-[var(--muted)] opacity-30">◈</div>
+        )}
+
         <div className="p-7">
-          <span className="text-[0.68rem] font-semibold tracking-[0.15em] uppercase text-[var(--red)] mb-2 block">{project.category_slug}</span>
+          <span className="text-[0.68rem] font-semibold tracking-[0.15em] uppercase text-[var(--red)] mb-2 block">
+            {(project.categories || []).join(' / ')}
+          </span>
           <h2 className="font-bebas text-[1.8rem] tracking-[0.03em] text-[var(--text)] mb-3">{project.title}</h2>
           {project.description && <p className="text-[0.9rem] text-[var(--muted)] leading-relaxed mb-2">{project.description}</p>}
           {project.created_at && <p className="text-[0.78rem] text-[var(--muted)] mb-5">Added {timeAgo(project.created_at)}</p>}
-          <Link to="/contact" className="inline-block bg-[var(--red)] text-white text-[0.82rem] font-semibold tracking-[0.1em] uppercase px-6 py-3 rounded hover:opacity-90 hover:-translate-y-0.5 transition-all">
+          <a
+            href={`https://wa.me/${contactPhone || '919876543210'}?text=${encodeURIComponent(`Hello! I am interested in your project: "${project.title}" and would like to know more.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-[var(--red)] text-white text-[0.82rem] font-semibold tracking-[0.1em] uppercase px-6 py-3 rounded hover:opacity-90 hover:-translate-y-0.5 transition-all cursor-pointer"
+          >
             Enquire About This
-          </Link>
+          </a>
         </div>
       </div>
     </div>
@@ -89,7 +149,7 @@ export default function Category() {
           <Link to="/home" className="font-bebas text-[1.4rem] tracking-[0.06em] text-[var(--text)]">
             Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
           </Link>
-          <Link to="/contact" className="text-[0.85rem] font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors">Contact</Link>
+          <a href="/#contact" className="text-[0.85rem] font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors">Contact</a>
         </div>
       </nav>
 
@@ -135,14 +195,14 @@ export default function Category() {
               {projects.map(p => (
                 <div
                   key={p.id}
-                  className="border border-[var(--border)] rounded-lg overflow-hidden bg-white cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all"
+                  className="border border-[var(--border)] rounded-lg overflow-hidden bg-white cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all group"
                   onClick={() => setSelected(p)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={e => e.key === 'Enter' && setSelected(p)}
                 >
-                  <div className="aspect-[4/3] overflow-hidden bg-[var(--bg)]">
-                    <img src={p.image_url} alt={p.title} loading="lazy" className="w-full h-full object-cover"/>
+                  <div className="aspect-[4/3] relative overflow-hidden bg-[var(--bg)]">
+                    <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
                   </div>
                   <div className="p-4">
                     <h3 className="text-[0.95rem] font-semibold text-[var(--text)] mb-1">{p.title}</h3>

@@ -18,8 +18,8 @@ function Toggle({ checked, onChange }) {
   return (
     <label className="relative inline-block w-10 h-6 cursor-pointer flex-shrink-0">
       <input type="checkbox" className="sr-only" checked={checked} onChange={e => onChange(e.target.checked)} />
-      <span className={`block w-full h-full rounded-full transition-colors duration-200 ${checked ? 'bg-[#27ae60]' : 'bg-gray-300'}`}/>
-      <span className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-4' : ''}`}/>
+      <span className={`block w-full h-full rounded-full transition-colors duration-200 ${checked ? 'bg-[#27ae60]' : 'bg-gray-300'}`} />
+      <span className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-200 ${checked ? 'translate-x-4' : ''}`} />
     </label>
   )
 }
@@ -39,7 +39,7 @@ function Modal({ open, onClose, title, children, footer }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] flex-shrink-0">
           <h2 className="font-bebas text-[1.4rem] tracking-[0.04em] text-[var(--text)]">{title}</h2>
           <button onClick={onClose} className="text-[var(--muted)] hover:text-[var(--text)] transition-colors bg-transparent border-none cursor-pointer p-1">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
         <div className="px-6 py-5 overflow-y-auto flex-1">{children}</div>
@@ -91,33 +91,72 @@ function NcTextarea({ label, error, rows = 3, ...props }) {
 /* ════════════════════════════
    IMAGE UPLOAD ZONE
 ════════════════════════════ */
-function ImageUpload({ preview, onFile }) {
+function MultiImageUpload({ images, setImages, existingImages, onSetCover, onDeleteExisting }) {
   const inputRef = useRef(null)
   const [dragging, setDragging] = useState(false)
 
-  function handleFile(file) {
-    if (file && file.type.startsWith('image/')) onFile(file)
+  function handleFiles(files) {
+    if (!files) return
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'))
+    setImages(prev => [...prev, ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f) }))])
+  }
+
+  function removeNew(index) {
+    setImages(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
-    <div
-      className={`border-2 border-dashed rounded-lg min-h-[130px] flex items-center justify-center cursor-pointer transition-all overflow-hidden ${dragging ? 'border-[var(--red)] bg-[rgba(192,57,43,0.03)]' : 'border-[var(--border)] bg-[var(--bg)]'} hover:border-[var(--red)]`}
-      onClick={() => inputRef.current?.click()}
-      onDragOver={e => { e.preventDefault(); setDragging(true) }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }}
-    >
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])} />
-      {preview
-        ? <img src={preview} alt="Preview" className="w-full max-h-[200px] object-contain p-2"/>
-        : (
-          <div className="flex flex-col items-center gap-2 p-6 text-center">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <p className="text-[0.875rem] text-[var(--muted)]">Click to upload or drag & drop</p>
-            <span className="text-[0.75rem] text-[#bbb5ad]">PNG, JPG up to 5MB</span>
+    <div className="flex flex-col gap-3">
+      <div
+        className={`border-2 border-dashed rounded-lg min-h-[100px] flex gap-3 flex-wrap items-center p-4 cursor-pointer transition-all ${dragging ? 'border-[var(--red)] bg-[rgba(192,57,43,0.03)]' : 'border-[var(--border)] bg-[var(--bg)]'} hover:border-[var(--red)]`}
+        onClick={(e) => {
+          if (e.target.closest('.img-action')) return 
+          inputRef.current?.click()
+        }}
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files) }}
+      >
+        <input ref={inputRef} type="file" multiple accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
+        
+        {/* Existing Images (from DB) */}
+        {existingImages && existingImages.map((img) => (
+          <div key={img.id} className="relative w-20 h-20 rounded overflow-hidden border border-[var(--border)] group bg-white shrink-0">
+            <img src={img.url} alt="Project image" className="w-full h-full object-cover"/>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 img-action">
+              {!img.is_cover && (
+                <button title="Set as cover" onClick={(e) => { e.stopPropagation(); onSetCover(img.id) }} className="bg-white/90 rounded text-[0.6rem] px-2 py-1 font-semibold uppercase tracking-wider hover:bg-white text-[var(--text)]">Cover</button>
+              )}
+              <button title="Delete image" onClick={(e) => { e.stopPropagation(); onDeleteExisting(img.id) }} className="bg-[var(--error)]/90 rounded text-[0.6rem] px-2 py-1 font-semibold uppercase tracking-wider hover:bg-[var(--error)] text-white">Del</button>
+            </div>
+            {img.is_cover && <div className="absolute top-1 left-1 bg-[var(--red)] text-white text-[0.55rem] px-1 rounded font-bold uppercase tracking-wider shadow">Cover</div>}
           </div>
-        )
-      }
+        ))}
+
+        {/* New uploaded Images */}
+        {images.map((img, i) => (
+          <div key={i} className="relative w-20 h-20 rounded overflow-hidden border border-[var(--border)] group bg-white shrink-0 opacity-80">
+            <img src={img.preview} alt="New upload" className="w-full h-full object-cover"/>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center img-action">
+              <button onClick={(e) => { e.stopPropagation(); removeNew(i) }} className="text-white hover:text-[var(--red)]">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className="absolute top-1 right-1 bg-black/60 text-white text-[0.55rem] px-1 rounded font-bold uppercase shadow">New</div>
+          </div>
+        ))}
+        
+        {(!existingImages || existingImages.length === 0) && images.length === 0 && (
+          <div className="w-full flex flex-col items-center gap-2 p-4 text-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+            <p className="text-[0.8rem] text-[var(--muted)]">Click or drag images here</p>
+          </div>
+        )}
+        
+      </div>
+      {(existingImages?.length > 0 || images.length > 0) && (
+        <p className="text-[0.7rem] text-[var(--muted)]">Drag files to upload more. First uploaded image defaults to Cover if none selected.</p>
+      )}
     </div>
   )
 }
@@ -182,19 +221,22 @@ function Toast({ msg, type, onClear }) {
    PROJECTS SECTION
 ════════════════════════════ */
 function ProjectsSection({ toast, categories }) {
-  const [projects, setProjects]   = useState([])
-  const [search, setSearch]       = useState('')
+  const [projects, setProjects] = useState([])
+  const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('')
   const [visFilter, setVisFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm]           = useState({ title: '', category_slug: '', description: '', is_visible: true })
-  const [errors, setErrors]       = useState({})
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState('')
-  const [saving, setSaving]       = useState(false)
+  const [form, setForm] = useState({ title: '', categories: [], description: '', is_visible: true })
+  const [errors, setErrors] = useState({})
+  
+  // Image states
+  const [newImages, setNewImages] = useState([])
+  const [existingImages, setExistingImages] = useState([]) 
+  
+  const [saving, setSaving] = useState(false)
   const [deleteModal, setDeleteModal] = useState(null)
-  const [deleting, setDeleting]   = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function load() {
     try {
@@ -203,37 +245,66 @@ function ProjectsSection({ toast, categories }) {
     } catch (e) { toast(e.message, 'error') }
   }
 
+  async function loadExistingImages(id) {
+    try {
+      const d = await api('GET', `/api/project/${id}/images`)
+      setExistingImages(d.images || [])
+    } catch (e) { toast('Could not load images', 'error') }
+  }
+
   useEffect(() => { load() }, [])
 
   function openAdd() {
     setEditingId(null)
-    setForm({ title: '', category_slug: '', description: '', is_visible: true })
+    setForm({ title: '', categories: [], description: '', is_visible: true })
     setErrors({})
-    setImageFile(null)
-    setImagePreview('')
+    setNewImages([])
+    setExistingImages([])
     setModalOpen(true)
   }
 
   function openEdit(p) {
     setEditingId(p.id)
-    setForm({ title: p.title, category_slug: p.category_slug, description: p.description || '', is_visible: p.is_visible })
+    setForm({ title: p.title, categories: p.categories || [], description: p.description || '', is_visible: p.is_visible })
     setErrors({})
-    setImageFile(null)
-    setImagePreview(p.image_url || '')
+    setNewImages([])
+    setExistingImages([])
+    loadExistingImages(p.id)
     setModalOpen(true)
   }
 
-  function handleFile(file) {
-    setImageFile(file)
-    const reader = new FileReader()
-    reader.onload = e => setImagePreview(e.target.result)
-    reader.readAsDataURL(file)
+  function toggleCategory(slug) {
+    setForm(f => ({
+      ...f, 
+      categories: f.categories.includes(slug) ? f.categories.filter(c => c !== slug) : [...f.categories, slug]
+    }))
+    setErrors(e => ({ ...e, categories: '' }))
+  }
+
+  async function setCoverImage(imageId) {
+    if (!editingId) return
+    try {
+      await api('POST', `/api/admin/projects/${editingId}/cover`, { image_id: imageId })
+      loadExistingImages(editingId)
+      load() // refetch cover url for list
+      toast('Cover image updated')
+    } catch (e) { toast(e.message, 'error') }
+  }
+
+  async function deleteExistingImage(imageId) {
+    if (!window.confirm('Delete this image permanently?')) return
+    try {
+      await api('DELETE', `/api/admin/images/${imageId}`)
+      loadExistingImages(editingId)
+      load()
+      toast('Image deleted')
+    } catch (e) { toast(e.message, 'error') }
   }
 
   function validate() {
     const e = {}
-    if (!form.title.trim())    e.title = 'Title is required.'
-    if (!form.category_slug)   e.category_slug = 'Please select a category.'
+    if (!form.title.trim()) e.title = 'Title is required.'
+    if (form.categories.length === 0) e.categories = 'Please select at least one category.'
     return e
   }
 
@@ -243,24 +314,40 @@ function ProjectsSection({ toast, categories }) {
     setSaving(true)
     try {
       const fd = new FormData()
-      fd.append('title',         form.title.trim())
-      fd.append('category_slug', form.category_slug)
-      fd.append('description',   form.description.trim())
-      fd.append('is_visible',    form.is_visible ? 'true' : 'false')
+      fd.append('title', form.title.trim())
+      fd.append('categories', form.categories.join(','))
+      fd.append('description', form.description.trim())
+      fd.append('is_visible', form.is_visible ? 'true' : 'false')
       fd.append('display_order', editingId
         ? String(projects.find(p => p.id === editingId)?.display_order ?? projects.length)
         : String(projects.length))
-      if (imageFile) fd.append('image_data', imageFile)
-
-      if (editingId) {
-        await api('PUT', `/api/admin/projects/${editingId}`, fd)
-        toast('Project updated')
-      } else {
+      
+      if (!editingId) {
+        // If creating new project, append all new images
+        newImages.forEach((img, idx) => {
+          fd.append(`image_data_${idx}`, img.file)
+        })
         await api('POST', '/api/admin/projects', fd)
         toast('Project added')
+        setModalOpen(false)
+        load()
+      } else {
+        // If editing, first update project text data
+        await api('PUT', `/api/admin/projects/${editingId}`, fd)
+        
+        // Then upload any new images individually
+        for (const img of newImages) {
+          const imgFd = new FormData()
+          imgFd.append('image_data', img.file)
+          await api('POST', `/api/admin/projects/${editingId}/images`, imgFd)
+        }
+        
+        if (newImages.length > 0) toast('Project updated and images uploaded')
+        else toast('Project updated')
+        
+        setModalOpen(false)
+        load()
       }
-      setModalOpen(false)
-      load()
     } catch (e) { toast(e.message, 'error') }
     finally { setSaving(false) }
   }
@@ -279,8 +366,8 @@ function ProjectsSection({ toast, categories }) {
   const getCategoryName = (slug) => categories.find(c => c.slug === slug)?.name || slug
 
   const filtered = projects.filter(p => {
-    const ms = !search    || p.title.toLowerCase().includes(search.toLowerCase())
-    const mc = !catFilter || p.category_slug === catFilter
+    const ms = !search || p.title.toLowerCase().includes(search.toLowerCase())
+    const mc = !catFilter || (p.categories || []).includes(catFilter)
     const mv = !visFilter || (visFilter === 'visible' ? p.is_visible : !p.is_visible)
     return ms && mc && mv
   })
@@ -293,7 +380,7 @@ function ProjectsSection({ toast, categories }) {
           <p className="text-[0.82rem] text-[var(--muted)] mt-1">Manage all signage projects</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[var(--red)] text-white px-4 py-[0.6rem] rounded-lg text-[0.84rem] font-semibold hover:bg-[var(--red-dark)] hover:-translate-y-px transition-all flex-shrink-0">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Add Project
         </button>
       </div>
@@ -301,9 +388,9 @@ function ProjectsSection({ toast, categories }) {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[180px] max-w-[320px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           <input type="text" placeholder="Search projects…" value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-[0.6rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] focus:shadow-[0_0_0_3px_rgba(192,57,43,0.08)] transition-all"/>
+            className="w-full pl-9 pr-3 py-[0.6rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] focus:shadow-[0_0_0_3px_rgba(192,57,43,0.08)] transition-all" />
         </div>
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className="px-3 py-[0.6rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] transition-all">
           <option value="">All Categories</option>
@@ -319,7 +406,7 @@ function ProjectsSection({ toast, categories }) {
       <Table
         headers={[
           { label: 'Order', style: { width: 60 } },
-          { label: 'Image', style: { width: 64 } },
+          { label: 'Cover', style: { width: 64 } },
           { label: 'Title' },
           { label: 'Category' },
           { label: 'Status', style: { width: 90 } },
@@ -331,26 +418,29 @@ function ProjectsSection({ toast, categories }) {
           <tr key={p.id} className="border-b border-[var(--border)] hover:bg-black/[0.015] transition-colors last:border-0">
             <td className="px-4 py-3 text-[var(--muted)] text-[0.82rem]">{p.display_order + 1}</td>
             <td className="px-4 py-3">
-              {p.image_url
-                ? <img src={p.image_url} alt={p.title} className="w-10 h-10 rounded object-cover bg-[var(--bg)]"/>
+              {p.cover_url
+                ? <img src={p.cover_url} alt={p.title} className="w-10 h-10 rounded object-cover bg-[var(--bg)]" />
                 : <div className="w-10 h-10 rounded bg-[var(--bg)] border border-dashed border-[var(--border)] flex items-center justify-center text-[#ccc]">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                </div>
               }
             </td>
             <td className="px-4 py-3">
               <strong className="text-[var(--text)]">{p.title}</strong>
-              {p.description && <><br/><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0,60)}{p.description.length > 60 ? '…' : ''}</span></>}
+              <span className="text-[0.7rem] text-[var(--muted)] ml-2 bg-black/[0.04] px-1.5 py-0.5 rounded">{p.image_count || 0} imgs</span>
+              {p.description && <><br /><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0, 60)}{p.description.length > 60 ? '…' : ''}</span></>}
             </td>
-            <td className="px-4 py-3 text-[var(--muted)]">{getCategoryName(p.category_slug)}</td>
-            <td className="px-4 py-3"><Badge visible={p.is_visible}/></td>
+            <td className="px-4 py-3 text-[var(--muted)]">
+              {p.categories?.map(getCategoryName).join(', ')}
+            </td>
+            <td className="px-4 py-3"><Badge visible={p.is_visible} /></td>
             <td className="px-4 py-3">
               <div className="flex gap-2">
                 <ActionBtn onClick={() => openEdit(p)} title="Edit">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 </ActionBtn>
                 <ActionBtn danger onClick={() => setDeleteModal(p)} title="Delete">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
                 </ActionBtn>
               </div>
             </td>
@@ -370,25 +460,35 @@ function ProjectsSection({ toast, categories }) {
           </button>
         </>}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <NcInput label="Project Title" placeholder="e.g. Café Lumière" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} error={errors.title}/>
-          <div className="flex flex-col gap-1 mb-4">
-            <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Category</label>
-            <select value={form.category_slug} onChange={e => setForm(f => ({...f, category_slug: e.target.value}))} className={`nc-input${errors.category_slug ? ' invalid' : ''}`}>
-              <option value="">Select category…</option>
-              {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-            {errors.category_slug && <p className="text-[0.72rem] text-[var(--error)]">{errors.category_slug}</p>}
-          </div>
-        </div>
-        <NcTextarea label="Description" placeholder="Short description of the project…" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))}/>
         <div className="mb-4">
-          <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] block mb-1">Project Image</label>
-          <ImageUpload preview={imagePreview} onFile={handleFile}/>
+          <NcInput label="Project Title" placeholder="e.g. Café Lumière" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} error={errors.title} />
+        </div>
+        <div className="flex flex-col gap-1 mb-4">
+          <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Categories</label>
+          <div className={`p-3 rounded border text-[0.875rem] flex flex-wrap gap-2 ${errors.categories ? 'border-[var(--error)] bg-[rgba(231,76,60,0.03)]' : 'border-[var(--border)] bg-white'}`}>
+            {categories.map(c => {
+              const checked = form.categories.includes(c.slug)
+              return (
+                <button
+                  key={c.slug}
+                  onClick={() => toggleCategory(c.slug)}
+                  className={`px-3 py-1 font-medium rounded-full cursor-pointer transition-colors border ${checked ? 'bg-[var(--text)] text-white border-[var(--text)]' : 'bg-black/[0.02] text-[var(--muted)] border-[var(--border)] hover:bg-black/[0.05]'}`}
+                >
+                  {c.name}
+                </button>
+              )
+            })}
+          </div>
+          {errors.categories && <p className="text-[0.72rem] text-[var(--error)] mt-1">{errors.categories}</p>}
+        </div>
+        <NcTextarea label="Description" placeholder="Short description of the project…" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+        <div className="mb-4">
+          <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] block mb-1">Project Images</label>
+          <MultiImageUpload images={newImages} setImages={setNewImages} existingImages={existingImages} onSetCover={setCoverImage} onDeleteExisting={deleteExistingImage} />
         </div>
         <label className="flex items-center justify-between text-[0.875rem] text-[var(--text)] cursor-pointer">
           <span>Visible on site</span>
-          <Toggle checked={form.is_visible} onChange={v => setForm(f => ({...f, is_visible: v}))}/>
+          <Toggle checked={form.is_visible} onChange={v => setForm(f => ({ ...f, is_visible: v }))} />
         </label>
       </Modal>
 
@@ -408,13 +508,13 @@ function ProjectsSection({ toast, categories }) {
 ════════════════════════════ */
 function CategoriesSection({ toast }) {
   const [categories, setCategories] = useState([])
-  const [modalOpen, setModalOpen]   = useState(false)
-  const [editingId, setEditingId]   = useState(null)
-  const [form, setForm]             = useState({ name: '', slug: '', description: '', is_visible: true })
-  const [errors, setErrors]         = useState({})
-  const [saving, setSaving]         = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({ name: '', slug: '', description: '', is_visible: true })
+  const [errors, setErrors] = useState({})
+  const [saving, setSaving] = useState(false)
   const [deleteModal, setDeleteModal] = useState(null)
-  const [deleting, setDeleting]     = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function load() {
     try {
@@ -457,10 +557,10 @@ function CategoriesSection({ toast }) {
     setSaving(true)
     try {
       const body = {
-        slug:          form.slug.trim(),
-        name:          form.name.trim(),
-        description:   form.description.trim(),
-        is_visible:    form.is_visible ? 'true' : 'false',
+        slug: form.slug.trim(),
+        name: form.name.trim(),
+        description: form.description.trim(),
+        is_visible: form.is_visible ? 'true' : 'false',
         display_order: editingId
           ? String(categories.find(c => c.id === editingId)?.display_order ?? categories.length)
           : String(categories.length),
@@ -497,7 +597,7 @@ function CategoriesSection({ toast }) {
           <p className="text-[0.82rem] text-[var(--muted)] mt-1">Manage signage categories</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[var(--red)] text-white px-4 py-[0.6rem] rounded-lg text-[0.84rem] font-semibold hover:bg-[var(--red-dark)] hover:-translate-y-px transition-all flex-shrink-0">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Add Category
         </button>
       </div>
@@ -516,15 +616,15 @@ function CategoriesSection({ toast }) {
           <tr key={c.id} className="border-b border-[var(--border)] hover:bg-black/[0.015] transition-colors last:border-0">
             <td className="px-4 py-3 text-[var(--muted)] text-[0.82rem]">{c.display_order + 1}</td>
             <td className="px-4 py-3"><strong>{c.name}</strong></td>
-            <td className="px-4 py-3 text-[0.85rem] text-[var(--muted)]">{c.description ? c.description.slice(0,60) + (c.description.length > 60 ? '…' : '') : '—'}</td>
-            <td className="px-4 py-3"><Badge visible={c.is_visible}/></td>
+            <td className="px-4 py-3 text-[0.85rem] text-[var(--muted)]">{c.description ? c.description.slice(0, 60) + (c.description.length > 60 ? '…' : '') : '—'}</td>
+            <td className="px-4 py-3"><Badge visible={c.is_visible} /></td>
             <td className="px-4 py-3">
               <div className="flex gap-2">
                 <ActionBtn onClick={() => openEdit(c)} title="Edit">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 </ActionBtn>
                 <ActionBtn danger onClick={() => setDeleteModal(c)} title="Delete">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
                 </ActionBtn>
               </div>
             </td>
@@ -550,7 +650,7 @@ function CategoriesSection({ toast }) {
           onChange={e => {
             const name = e.target.value
             setForm(f => ({ ...f, name, slug: editingId ? f.slug : autoSlug(name) }))
-            setErrors(er => ({...er, name: ''}))
+            setErrors(er => ({ ...er, name: '' }))
           }}
           error={errors.name}
         />
@@ -558,13 +658,13 @@ function CategoriesSection({ toast }) {
         <div className="hidden">
           <NcInput
             value={form.slug}
-            onChange={e => { setForm(f => ({...f, slug: e.target.value})); setErrors(er => ({...er, slug: ''})) }}
+            onChange={e => { setForm(f => ({ ...f, slug: e.target.value })); setErrors(er => ({ ...er, slug: '' })) }}
           />
         </div>
-        <NcTextarea label="Description" placeholder="Brief description shown on the category page…" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))}/>
+        <NcTextarea label="Description" placeholder="Brief description shown on the category page…" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
         <label className="flex items-center justify-between text-[0.875rem] text-[var(--text)] cursor-pointer">
           <span>Visible on site</span>
-          <Toggle checked={form.is_visible} onChange={v => setForm(f => ({...f, is_visible: v}))}/>
+          <Toggle checked={form.is_visible} onChange={v => setForm(f => ({ ...f, is_visible: v }))} />
         </label>
       </Modal>
 
@@ -583,7 +683,7 @@ function CategoriesSection({ toast }) {
    CONTACT INFO SECTION
 ════════════════════════════ */
 function ContactSection({ toast }) {
-  const [form, setForm]   = useState({ phone: '', email: '', address: '', working_hours: '', maps_embed_url: '' })
+  const [form, setForm] = useState({ phone: '', email: '', address: '', working_hours: '', maps_embed_url: '' })
   const [saving, setSaving] = useState(false)
   const mapDebounce = useRef(null)
   const [mapSrc, setMapSrc] = useState('')
@@ -592,14 +692,14 @@ function ContactSection({ toast }) {
     api('GET', '/api/admin/contact')
       .then(d => {
         const c = d.contact || {}
-        setForm({ phone: c.phone||'', email: c.email||'', address: c.address||'', working_hours: c.working_hours||'', maps_embed_url: c.maps_embed_url||'' })
+        setForm({ phone: c.phone || '', email: c.email || '', address: c.address || '', working_hours: c.working_hours || '', maps_embed_url: c.maps_embed_url || '' })
         if (c.maps_embed_url) setMapSrc(c.maps_embed_url)
       })
       .catch(e => toast(e.message, 'error'))
   }, [])
 
   function handleMapsInput(val) {
-    setForm(f => ({...f, maps_embed_url: val}))
+    setForm(f => ({ ...f, maps_embed_url: val }))
     clearTimeout(mapDebounce.current)
     mapDebounce.current = setTimeout(() => {
       if (val.startsWith('https://www.google.com/maps/embed')) setMapSrc(val)
@@ -618,7 +718,7 @@ function ContactSection({ toast }) {
   const inp = (key, label, type = 'text', placeholder = '') => (
     <div className="flex flex-col gap-1 mb-4">
       <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">{label}</label>
-      <input type={type} placeholder={placeholder} value={form[key]} onChange={e => setForm(f => ({...f, [key]: e.target.value}))} className="nc-input"/>
+      <input type={type} placeholder={placeholder} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="nc-input" />
     </div>
   )
 
@@ -632,27 +732,27 @@ function ContactSection({ toast }) {
       <div className="grid grid-cols-2 gap-6 max-md:grid-cols-1 items-start">
         <div className="bg-white border border-[var(--border)] rounded-xl p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           <h3 className="font-bebas text-[1.2rem] tracking-[0.04em] text-[var(--text)] mb-5">Business Details</h3>
-          {inp('phone',         'Phone Number',  'tel',   '+91 98765 43210')}
-          {inp('email',         'Email Address', 'email', 'info@nidhicreation.in')}
+          {inp('phone', 'Phone Number', 'tel', '+91 98765 43210')}
+          {inp('email', 'Email Address', 'email', 'info@nidhicreation.in')}
           <div className="flex flex-col gap-1 mb-4">
             <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Address</label>
-            <textarea rows={3} placeholder="123, Signboard Market, Ahmedabad…" value={form.address} onChange={e => setForm(f => ({...f, address: e.target.value}))} className="nc-input resize-y"/>
+            <textarea rows={3} placeholder="123, Signboard Market, Ahmedabad…" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="nc-input resize-y" />
           </div>
-          {inp('working_hours', 'Working Hours', 'text',  'Mon – Sat: 9:00 AM – 7:00 PM')}
+          {inp('working_hours', 'Working Hours', 'text', 'Mon – Sat: 9:00 AM – 7:00 PM')}
         </div>
 
         <div className="bg-white border border-[var(--border)] rounded-xl p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           <h3 className="font-bebas text-[1.2rem] tracking-[0.04em] text-[var(--text)] mb-5">Google Maps Embed</h3>
           <div className="flex flex-col gap-1 mb-3">
             <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Maps Embed URL</label>
-            <textarea rows={4} placeholder="Paste the src URL from Google Maps → Share → Embed a map…" value={form.maps_embed_url} onChange={e => handleMapsInput(e.target.value)} className="nc-input resize-y"/>
+            <textarea rows={4} placeholder="Paste the src URL from Google Maps → Share → Embed a map…" value={form.maps_embed_url} onChange={e => handleMapsInput(e.target.value)} className="nc-input resize-y" />
           </div>
           <p className="text-[0.78rem] text-[var(--muted)] mb-4 leading-relaxed">
             Go to <strong>maps.google.com</strong> → search your location → Share → Embed a map → copy only the <code className="bg-[var(--bg)] border border-[var(--border)] rounded px-1 text-[0.8em]">src="…"</code> URL.
           </p>
           {mapSrc && (
             <div className="w-full h-[180px] rounded-lg overflow-hidden border border-[var(--border)]">
-              <iframe src={mapSrc} width="100%" height="100%" style={{ border: 0, display: 'block' }} loading="lazy" title="Map Preview"/>
+              <iframe src={mapSrc} width="100%" height="100%" style={{ border: 0, display: 'block' }} loading="lazy" title="Map Preview" />
             </div>
           )}
         </div>
@@ -671,7 +771,7 @@ function ContactSection({ toast }) {
    VISITORS SECTION
 ════════════════════════════ */
 function VisitorsSection({ toast }) {
-  const [query, setQuery]     = useState('')
+  const [query, setQuery] = useState('')
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -696,7 +796,7 @@ function VisitorsSection({ toast }) {
 
       <div className="flex gap-3 mb-6">
         <div className="relative flex-1 max-w-[480px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           <input
             type="text"
             placeholder="Type a visitor name…"
@@ -713,7 +813,7 @@ function VisitorsSection({ toast }) {
 
       {results === null && (
         <div className="flex flex-col items-center gap-3 py-20 text-[var(--muted)]">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
           <p className="text-[0.875rem]">Search for a visitor to see their details.</p>
         </div>
       )}
@@ -742,23 +842,23 @@ function VisitorsSection({ toast }) {
    MAIN DASHBOARD
 ════════════════════════════ */
 const NAV_ITEMS = [
-  { key: 'projects',   label: 'Projects',     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-  { key: 'categories', label: 'Categories',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
-  { key: 'contact',    label: 'Contact Info', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg> },
-  { key: 'visitors',   label: 'Visitors',     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+  { key: 'projects', label: 'Projects', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg> },
+  { key: 'categories', label: 'Categories', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg> },
+  { key: 'contact', label: 'Contact Info', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z" /></svg> },
+  { key: 'visitors', label: 'Visitors', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
 ]
 
 export default function AdminDashboard() {
-  const navigate              = useNavigate()
-  const [active, setActive]   = useState('projects')
+  const navigate = useNavigate()
+  const [active, setActive] = useState('projects')
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [toast, setToast]     = useState({ msg: '', type: 'success' })
+  const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [categories, setCategories] = useState([])
 
   useEffect(() => {
     api('GET', '/api/admin/categories')
       .then(d => setCategories(d.categories || []))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   function showToast(msg, type = 'success') {
@@ -803,38 +903,38 @@ export default function AdminDashboard() {
           onClick={logout}
           className="flex items-center gap-3 px-6 py-4 border-t border-white/[0.08] bg-transparent border-l-0 border-r-0 border-b-0 text-white/35 hover:text-white/70 text-[0.82rem] font-medium transition-colors cursor-pointer font-dm"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
           Logout
         </button>
       </aside>
 
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-[99] md:hidden" onClick={() => setSidebarOpen(false)}/>
+        <div className="fixed inset-0 bg-black/40 z-[99] md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       <main className="flex-1 flex flex-col" style={{ marginLeft: window.innerWidth > 900 ? 220 : 0 }}>
         <header className="sticky top-0 h-14 bg-[rgba(245,243,238,0.95)] backdrop-blur-md border-b border-[var(--border)] flex items-center gap-4 px-7 z-50 flex-shrink-0">
           <button className="md:hidden flex flex-col gap-1 bg-transparent border-none cursor-pointer p-2" onClick={() => setSidebarOpen(s => !s)}>
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded"/>
+            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
+            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
+            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
           </button>
           <span className="font-bebas text-[1.25rem] tracking-[0.06em] text-[var(--text)] flex-1">{activeLabel}</span>
           <span className="inline-flex items-center gap-1 text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--red)] bg-[rgba(192,57,43,0.08)] px-3 py-[0.3rem] rounded-full">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             Admin
           </span>
         </header>
 
         <div className="p-7 max-sm:p-4 flex-1">
-          {active === 'projects'   && <ProjectsSection   toast={showToast} categories={categories} />}
+          {active === 'projects' && <ProjectsSection toast={showToast} categories={categories} />}
           {active === 'categories' && <CategoriesSection toast={showToast} />}
-          {active === 'contact'    && <ContactSection    toast={showToast} />}
-          {active === 'visitors'   && <VisitorsSection   toast={showToast} />}
+          {active === 'contact' && <ContactSection toast={showToast} />}
+          {active === 'visitors' && <VisitorsSection toast={showToast} />}
         </div>
       </main>
 
-      <Toast msg={toast.msg} type={toast.type} onClear={() => setToast({ msg: '', type: 'success' })}/>
+      <Toast msg={toast.msg} type={toast.type} onClear={() => setToast({ msg: '', type: 'success' })} />
     </div>
   )
 }

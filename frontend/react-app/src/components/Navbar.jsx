@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api'
 
 export default function Navbar() {
@@ -9,6 +9,8 @@ export default function Navbar() {
   const [categories, setCategories] = useState([])
   const dropRef = useRef(null)
   const hoverTimer = useRef(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -50,6 +52,21 @@ export default function Navbar() {
   const closeAll = () => {
     setMenuOpen(false)
     setDropOpen(false)
+  }
+
+  function scrollToContact(e) {
+    e.preventDefault()
+    closeAll()
+    // If we're already on the home page, just scroll
+    if (location.pathname === '/' || location.pathname === '/home') {
+      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      // Navigate home first, then scroll after render
+      navigate('/')
+      setTimeout(() => {
+        document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+      }, 300)
+    }
   }
 
   return (
@@ -109,13 +126,14 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Contact (NOW independent) */}
-            <Link
-              to="/contact"
-              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all"
+            {/* Contact — scrolls to #contact section */}
+            <a
+              href="#contact"
+              onClick={scrollToContact}
+              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all cursor-pointer"
             >
               Contact Us
-            </Link>
+            </a>
 
           </div>
 
@@ -151,13 +169,13 @@ export default function Navbar() {
 
             {/* Contact in mobile */}
             <li>
-              <Link
-                to="/contact"
-                className="block text-[0.9rem] text-[var(--muted)] py-3 hover:text-[var(--red)]"
-                onClick={closeAll}
+              <a
+                href="#contact"
+                onClick={scrollToContact}
+                className="block text-[0.9rem] text-[var(--muted)] py-3 hover:text-[var(--red)] cursor-pointer"
               >
                 Contact Us
-              </Link>
+              </a>
             </li>
           </ul>
         </div>

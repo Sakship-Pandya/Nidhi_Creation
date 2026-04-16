@@ -230,18 +230,21 @@ def reorder_categories(ordered_ids: list[int]):
 # ════════════════════════════════
 
 def get_all_projects(visible_only: bool = False) -> list[dict]:
-    """Return all projects ordered by display_order."""
+    """Return all projects with their categories. Ordered by display_order."""
     conn = get_connection()
     cur  = conn.cursor()
 
-    query = """
-        SELECT id, title, description, category_slug,
-               image_mime, display_order, is_visible, created_at
-        FROM   projects
-        {}
-        ORDER  BY display_order ASC, id ASC
-    """.format("WHERE is_visible = TRUE" if visible_only else "")
-
+    visibility_clause = "WHERE p.is_visible = TRUE" if visible_only else ""
+    query = f"""
+        SELECT 
+            p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
+            (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id,
+            (SELECT COUNT(*) FROM project_images WHERE project_id = p.id) as image_count
+        FROM projects p
+        {visibility_clause}
+        ORDER BY p.display_order ASC, p.id ASC
+    """
     cur.execute(query)
     rows = cur.fetchall()
     cur.close()
@@ -252,11 +255,13 @@ def get_all_projects(visible_only: bool = False) -> list[dict]:
             'id':            r[0],
             'title':         r[1],
             'description':   r[2],
-            'category_slug': r[3],
-            'image_url':     f'/api/project/{r[0]}/image' if r[4] else None,
-            'display_order': r[5],
-            'is_visible':    r[6],
-            'created_at':    r[7].strftime('%d %b %Y') if r[7] else None,
+            'display_order': r[3],
+            'is_visible':    r[4],
+            'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
+            'categories':    r[6] or [],
+            'has_cover':     bool(r[7]),
+            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'image_count':   r[8]
         }
         for r in rows
     ]
@@ -264,18 +269,21 @@ def get_all_projects(visible_only: bool = False) -> list[dict]:
 
 def get_projects_by_category(category_slug: str,
                               visible_only: bool = True) -> list[dict]:
-    """Return all projects for a given category slug."""
+    """Return all projects that are linked to a given category slug."""
     conn = get_connection()
     cur  = conn.cursor()
 
-    visibility_clause = "AND is_visible = TRUE" if visible_only else ""
+    visibility_clause = "AND p.is_visible = TRUE" if visible_only else ""
     cur.execute(
         f"""
-        SELECT id, title, description, category_slug,
-               image_mime, display_order, is_visible, created_at
-        FROM   projects
-        WHERE  category_slug = %s {visibility_clause}
-        ORDER  BY display_order ASC, id ASC
+        SELECT 
+            p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
+            (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id
+        FROM projects p
+        JOIN project_categories pc ON p.id = pc.project_id
+        WHERE pc.category_slug = %s {visibility_clause}
+        ORDER BY p.display_order ASC, p.id ASC
         """,
         (category_slug,)
     )
@@ -288,11 +296,12 @@ def get_projects_by_category(category_slug: str,
             'id':            r[0],
             'title':         r[1],
             'description':   r[2],
-            'category_slug': r[3],
-            'image_url':     f'/api/project/{r[0]}/image' if r[4] else None,
-            'display_order': r[5],
-            'is_visible':    r[6],
-            'created_at':    r[7].strftime('%d %b %Y') if r[7] else None,
+            'display_order': r[3],
+            'is_visible':    r[4],
+            'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
+            'categories':    r[6] or [],
+            'has_cover':     bool(r[7]),
+            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
         }
         for r in rows
     ]
@@ -304,12 +313,14 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
     cur  = conn.cursor()
     cur.execute(
         """
-        SELECT id, title, description, category_slug,
-               image_mime, display_order, is_visible, created_at
-        FROM   projects
-        WHERE  is_visible = TRUE
-        ORDER  BY created_at DESC
-        LIMIT  %s
+        SELECT 
+            p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
+            (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id
+        FROM projects p
+        WHERE p.is_visible = TRUE
+        ORDER BY p.created_at DESC
+        LIMIT %s
         """,    
         (limit,)
     )
@@ -322,93 +333,72 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
             'id':            r[0],
             'title':         r[1],
             'description':   r[2],
-            'category_slug': r[3],
-            'image_url':     f'/api/project/{r[0]}/image' if r[4] else None,
-            'display_order': r[5],
-            'is_visible':    r[6],
-            'created_at':    r[7].strftime('%d %b %Y') if r[7] else None,
+            'display_order': r[3],
+            'is_visible':    r[4],
+            'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
+            'categories':    r[6] or [],
+            'has_cover':     bool(r[7]),
+            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
         }
         for r in rows
     ]
 
 
-def get_project_image(project_id: int) -> tuple[bytes | None, str]:
-    """Return (image_bytes, mime_type) for a project, or (None, '') if not found."""
+def add_project(title: str, description: str = None,
+                display_order: int = 0, is_visible: bool = True, categories: list[str] = None) -> int:
+    """Insert a new project and link its categories. Returns the new row id."""
+    if categories is None: categories = []
+    
     conn = get_connection()
     cur  = conn.cursor()
-    cur.execute(
-        "SELECT image_data, image_mime FROM projects WHERE id = %s",
-        (project_id,)
-    )
-    row = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if not row or row[0] is None:
-        return None, ''
-    return bytes(row[0]), row[1] or 'image/jpeg'
-
-
-def add_project(title: str, category_slug: str, description: str = None,
-                image_data: bytes = None, image_mime: str = 'image/jpeg',
-                display_order: int = 0, is_visible: bool = True) -> int:
-    """Insert a new project. Returns the new row id."""
-    conn = get_connection()
-    cur  = conn.cursor()
+    
+    # Insert project
     cur.execute(
         """
-        INSERT INTO projects
-            (title, description, category_slug, image_data, image_mime,
-             display_order, is_visible)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO projects (title, description, display_order, is_visible)
+        VALUES (%s, %s, %s, %s)
         RETURNING id
         """,
-        (title, description, category_slug,
-         image_data, image_mime, display_order, is_visible)
+        (title, description, display_order, is_visible)
     )
     new_id = cur.fetchone()[0]
+    
+    # Insert categories
+    for slug in categories:
+        cur.execute(
+            "INSERT INTO project_categories (project_id, category_slug) VALUES (%s, %s)",
+            (new_id, slug)
+        )
+        
     conn.commit()
     cur.close()
     conn.close()
     return new_id
 
 
-def update_project(project_id: int, title: str, category_slug: str,
-                   description: str = None, image_data: bytes = None,
-                   image_mime: str = None, display_order: int = 0,
-                   is_visible: bool = True):
-    """
-    Update an existing project.
-    If image_data is None the existing image is kept unchanged.
-    """
+def update_project(project_id: int, title: str, description: str = None, 
+                   display_order: int = 0, is_visible: bool = True, categories: list[str] = None):
+    """Update an existing project and its categories."""
     conn = get_connection()
     cur  = conn.cursor()
 
-    if image_data is not None:
-        cur.execute(
-            """
-            UPDATE projects
-            SET    title = %s, description = %s, category_slug = %s,
-                   image_data = %s, image_mime = %s,
-                   display_order = %s, is_visible = %s,
-                   updated_at = NOW()
-            WHERE  id = %s
-            """,
-            (title, description, category_slug,
-             image_data, image_mime, display_order, is_visible, project_id)
-        )
-    else:
-        cur.execute(
-            """
-            UPDATE projects
-            SET    title = %s, description = %s, category_slug = %s,
-                   display_order = %s, is_visible = %s,
-                   updated_at = NOW()
-            WHERE  id = %s
-            """,
-            (title, description, category_slug,
-             display_order, is_visible, project_id)
-        )
+    cur.execute(
+        """
+        UPDATE projects
+        SET    title = %s, description = %s, display_order = %s, is_visible = %s, updated_at = NOW()
+        WHERE  id = %s
+        """,
+        (title, description, display_order, is_visible, project_id)
+    )
+    
+    if categories is not None:
+        # Re-link categories
+        cur.execute("DELETE FROM project_categories WHERE project_id = %s", (project_id,))
+        for slug in categories:
+            cur.execute(
+                "INSERT INTO project_categories (project_id, category_slug) VALUES (%s, %s)",
+                (project_id, slug)
+            )
 
     conn.commit()
     cur.close()
@@ -416,7 +406,7 @@ def update_project(project_id: int, title: str, category_slug: str,
 
 
 def delete_project(project_id: int):
-    """Delete a project and its image."""
+    """Delete a project. ON DELETE CASCADE will handle project_images and project_categories."""
     conn = get_connection()
     cur  = conn.cursor()
     cur.execute("DELETE FROM projects WHERE id = %s", (project_id,))
@@ -426,10 +416,7 @@ def delete_project(project_id: int):
 
 
 def reorder_projects(ordered_ids: list[int]):
-    """
-    Update display_order for a list of project ids.
-    ordered_ids = [id_first, id_second, …] — position = index.
-    """
+    """Update display_order for a list of project ids."""
     conn = get_connection()
     cur  = conn.cursor()
     for position, proj_id in enumerate(ordered_ids):
@@ -437,6 +424,122 @@ def reorder_projects(ordered_ids: list[int]):
             "UPDATE projects SET display_order = %s WHERE id = %s",
             (position, proj_id)
         )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ════════════════════════════════
+# PROJECT IMAGES
+# ════════════════════════════════
+
+def get_project_cover_image(project_id: int) -> tuple[bytes | None, str]:
+    """Return (image_bytes, mime_type) for the project's cover image."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute(
+        "SELECT image_data, image_mime FROM project_images WHERE project_id = %s AND is_cover = TRUE LIMIT 1",
+        (project_id,)
+    )
+    row = cur.fetchone()
+    # Fallback to any image if no cover is set
+    if not row:
+        cur.execute(
+            "SELECT image_data, image_mime FROM project_images WHERE project_id = %s ORDER BY display_order ASC LIMIT 1",
+            (project_id,)
+        )
+        row = cur.fetchone()
+        
+    cur.close()
+    conn.close()
+
+    if not row or row[0] is None:
+        return None, ''
+    return bytes(row[0]), row[1] or 'image/jpeg'
+
+
+def get_image_data(image_id: int) -> tuple[bytes | None, str]:
+    """Return raw bytes for a specific image by ID."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute("SELECT image_data, image_mime FROM project_images WHERE id = %s", (image_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not row or row[0] is None:
+        return None, ''
+    return bytes(row[0]), row[1] or 'image/jpeg'
+
+
+def get_project_images_meta(project_id: int) -> list[dict]:
+    """Return metadata for all images of a project, used for sliders and dashboard grids."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute(
+        "SELECT id, is_cover, display_order FROM project_images WHERE project_id = %s ORDER BY display_order ASC, id ASC",
+        (project_id,)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    return [
+        {
+            'id': r[0],
+            'url': f'/api/images/{r[0]}',
+            'is_cover': r[1],
+            'display_order': r[2]
+        }
+        for r in rows
+    ]
+
+
+def add_project_image(project_id: int, image_data: bytes, image_mime: str, is_cover: bool = False):
+    """Add an image to a project. If is_cover is True, unset others."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    
+    if is_cover:
+        cur.execute("UPDATE project_images SET is_cover = FALSE WHERE project_id = %s", (project_id,))
+    else:
+        # Make it cover if it's the first image
+        cur.execute("SELECT COUNT(*) FROM project_images WHERE project_id = %s", (project_id,))
+        if cur.fetchone()[0] == 0:
+            is_cover = True
+            
+    # get max display_order
+    cur.execute("SELECT COALESCE(MAX(display_order), -1) + 1 FROM project_images WHERE project_id = %s", (project_id,))
+    next_order = cur.fetchone()[0]
+
+    cur.execute(
+        """
+        INSERT INTO project_images (project_id, image_data, image_mime, is_cover, display_order)
+        VALUES (%s, %s, %s, %s, %s)
+        """,
+        (project_id, image_data, image_mime, is_cover, next_order)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def set_cover_image(project_id: int, image_id: int):
+    """Set the specified image as the cover image for the project."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute("UPDATE project_images SET is_cover = FALSE WHERE project_id = %s", (project_id,))
+    cur.execute("UPDATE project_images SET is_cover = TRUE WHERE id = %s AND project_id = %s", (image_id, project_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def delete_project_image(image_id: int):
+    """Delete a specific image by ID."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute("DELETE FROM project_images WHERE id = %s", (image_id,))
     conn.commit()
     cur.close()
     conn.close()

@@ -10,12 +10,10 @@ from pathlib import Path
 
 from routes import (
     static,
-    visitors,
     admin_auth,
     projects,
     categories,
     contact,
-    admin_visitors,
 )
 
 # Path to React build folder
@@ -32,11 +30,7 @@ def dispatch(method: str, raw_path: str, body: dict, headers, respond):
     path = raw_path.split('?')[0].rstrip('/')
 
     handlers = [
-        # admin_visitors needs raw_path for query string
-        lambda: admin_visitors.handle(method, path, body, headers, respond, raw_path),
-
         lambda: admin_auth.handle(method, path, body, headers, respond),
-        lambda: visitors.handle(method, path, body, headers, respond),
         lambda: projects.handle(method, path, body, headers, respond),
         lambda: categories.handle(method, path, body, headers, respond),
         lambda: contact.handle(method, path, body, headers, respond),

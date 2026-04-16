@@ -11,18 +11,6 @@ def create_tables():
     conn = get_connection()
     cur  = conn.cursor()
 
-    # ── Visitors ─────────────────────────────
-    # Stores every person who logs in from the public Login page
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS visitors (
-            id          SERIAL PRIMARY KEY,
-            name        VARCHAR(120)  NOT NULL,
-            phone       VARCHAR(20)   NOT NULL,
-            business    VARCHAR(150),
-            visited_at  TIMESTAMP     NOT NULL DEFAULT NOW()
-        );
-    """)
-
     # ── Admins ───────────────────────────────
     # Stores admin credentials (password stored as bcrypt hash)
     cur.execute("""
@@ -37,25 +25,24 @@ def create_tables():
     # ── Categories ───────────────────────────
     cur.execute("""
         CREATE TABLE IF NOT EXISTS categories (
-            id          SERIAL PRIMARY KEY,
-            slug        VARCHAR(60)   NOT NULL UNIQUE,
-            name        VARCHAR(100)  NOT NULL,
-            description TEXT,
-            display_order INTEGER      NOT NULL DEFAULT 0,
-            is_visible  BOOLEAN       NOT NULL DEFAULT TRUE,
-            created_at  TIMESTAMP     NOT NULL DEFAULT NOW()
+            id            SERIAL PRIMARY KEY,
+            slug          VARCHAR(60)   NOT NULL UNIQUE,
+            name          VARCHAR(100)  NOT NULL,
+            description   TEXT,
+            display_order INTEGER       NOT NULL DEFAULT 0,
+            is_visible    BOOLEAN       NOT NULL DEFAULT TRUE,
+            created_at    TIMESTAMP     NOT NULL DEFAULT NOW()
         );
     """)
 
     # ── Projects ─────────────────────────────
+    # No longer holds image_data or a single category_slug.
+    # Images live in project_images; categories in project_categories.
     cur.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id            SERIAL PRIMARY KEY,
             title         VARCHAR(150)  NOT NULL,
             description   TEXT,
-            category_slug VARCHAR(60)   NOT NULL REFERENCES categories(slug) ON UPDATE CASCADE ON DELETE RESTRICT,
-            image_data    BYTEA,
-            image_mime    VARCHAR(50)   DEFAULT 'image/jpeg',
             display_order INTEGER       NOT NULL DEFAULT 0,
             is_visible    BOOLEAN       NOT NULL DEFAULT TRUE,
             created_at    TIMESTAMP     NOT NULL DEFAULT NOW(),
@@ -63,17 +50,42 @@ def create_tables():
         );
     """)
 
+    # ── Project <-> Categories (Many-to-Many) ──
+    # A project can belong to multiple categories.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS project_categories (
+            project_id    INTEGER    NOT NULL REFERENCES projects(id)    ON DELETE CASCADE,
+            category_slug VARCHAR(60) NOT NULL REFERENCES categories(slug) ON UPDATE CASCADE ON DELETE RESTRICT,
+            PRIMARY KEY (project_id, category_slug)
+        );
+    """)
+
+    # ── Project Images (One-to-Many) ─────────
+    # One project can have many images.
+    # Exactly ONE image per project should have is_cover = TRUE.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS project_images (
+            id            SERIAL  PRIMARY KEY,
+            project_id    INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            image_data    BYTEA   NOT NULL,
+            image_mime    VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+            is_cover      BOOLEAN NOT NULL DEFAULT FALSE,
+            display_order INTEGER NOT NULL DEFAULT 0,
+            created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+    """)
+
     # ── Contact Info ─────────────────────────
     # Single-row table — always upsert row with id=1
     cur.execute("""
         CREATE TABLE IF NOT EXISTS contact_info (
-            id           INTEGER PRIMARY KEY DEFAULT 1,
-            phone        VARCHAR(30),
-            email        VARCHAR(120),
-            address      TEXT,
-            working_hours VARCHAR(100),
+            id             INTEGER PRIMARY KEY DEFAULT 1,
+            phone          VARCHAR(30),
+            email          VARCHAR(120),
+            address        TEXT,
+            working_hours  VARCHAR(100),
             maps_embed_url TEXT,
-            updated_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at     TIMESTAMP NOT NULL DEFAULT NOW(),
             CONSTRAINT single_row CHECK (id = 1)
         );
     """)
@@ -83,14 +95,14 @@ def create_tables():
         INSERT INTO contact_info (id, phone, email, address, working_hours)
         VALUES (1, '+91 98765 43210', 'info@nidhicreation.in',
                 '123, Signboard Market, Ahmedabad, Gujarat — 380001',
-                'Mon – Sat: 9:00 AM – 7:00 PM')
+                'Mon - Sat: 9:00 AM - 7:00 PM')
         ON CONFLICT (id) DO NOTHING;
     """)
 
     conn.commit()
     cur.close()
     conn.close()
-    print("✓ All tables created successfully.")
+    print("All tables created successfully.")
 
 
 if __name__ == '__main__':
