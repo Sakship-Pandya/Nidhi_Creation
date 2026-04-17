@@ -227,7 +227,7 @@ function ProjectsSection({ toast, categories }) {
   const [visFilter, setVisFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ title: '', categories: [], description: '', is_visible: true })
+  const [form, setForm] = useState({ title: '', categories: [], description: '', is_visible: true, review_text: '', review_rating: '' })
   const [errors, setErrors] = useState({})
   
   // Image states
@@ -256,7 +256,7 @@ function ProjectsSection({ toast, categories }) {
 
   function openAdd() {
     setEditingId(null)
-    setForm({ title: '', categories: [], description: '', is_visible: true })
+    setForm({ title: '', categories: [], description: '', is_visible: true, review_text: '', review_rating: '' })
     setErrors({})
     setNewImages([])
     setExistingImages([])
@@ -265,7 +265,14 @@ function ProjectsSection({ toast, categories }) {
 
   function openEdit(p) {
     setEditingId(p.id)
-    setForm({ title: p.title, categories: p.categories || [], description: p.description || '', is_visible: p.is_visible })
+    setForm({ 
+      title: p.title, 
+      categories: p.categories || [], 
+      description: p.description || '', 
+      is_visible: p.is_visible,
+      review_text: p.review_text || '',
+      review_rating: p.review_rating || ''
+    })
     setErrors({})
     setNewImages([])
     setExistingImages([])
@@ -321,6 +328,9 @@ function ProjectsSection({ toast, categories }) {
       fd.append('display_order', editingId
         ? String(projects.find(p => p.id === editingId)?.display_order ?? projects.length)
         : String(projects.length))
+      
+      fd.append('review_text', form.review_text.trim())
+      fd.append('review_rating', form.review_rating || '')
       
       if (!editingId) {
         // If creating new project, append all new images
@@ -429,6 +439,12 @@ function ProjectsSection({ toast, categories }) {
               <strong className="text-[var(--text)]">{p.title}</strong>
               <span className="text-[0.7rem] text-[var(--muted)] ml-2 bg-black/[0.04] px-1.5 py-0.5 rounded">{p.image_count || 0} imgs</span>
               {p.description && <><br /><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0, 60)}{p.description.length > 60 ? '…' : ''}</span></>}
+              {p.review_text && (
+                <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-[#f39c12] font-semibold uppercase tracking-wider">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Has Review
+                </div>
+              )}
             </td>
             <td className="px-4 py-3 text-[var(--muted)]">
               {p.categories?.map(getCategoryName).join(', ')}
@@ -486,7 +502,27 @@ function ProjectsSection({ toast, categories }) {
           <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] block mb-1">Project Images</label>
           <MultiImageUpload images={newImages} setImages={setNewImages} existingImages={existingImages} onSetCover={setCoverImage} onDeleteExisting={deleteExistingImage} />
         </div>
-        <label className="flex items-center justify-between text-[0.875rem] text-[var(--text)] cursor-pointer">
+        
+        {/* Review Section */}
+        <div className="pt-4 mt-4 border-t border-[var(--border)]">
+          <h3 className="text-[0.8rem] font-bebas tracking-[0.06em] text-[var(--text)] mb-3">Optional Project Review</h3>
+          <div className="grid grid-cols-[1fr_120px] gap-4">
+            <NcTextarea label="Review Text" placeholder="What did the client say?" className="mb-0" value={form.review_text} onChange={e => setForm(f => ({ ...f, review_text: e.target.value }))} />
+            <div className="flex flex-col gap-1">
+              <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Stars (1-5)</label>
+              <select 
+                value={form.review_rating} 
+                onChange={e => setForm(f => ({ ...f, review_rating: e.target.value }))}
+                className="w-full h-[42px] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] px-2 focus:border-[var(--red)] outline-none"
+              >
+                <option value="">No Rating</option>
+                {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <label className="flex items-center justify-between text-[0.875rem] text-[var(--text)] cursor-pointer mt-6">
           <span>Visible on site</span>
           <Toggle checked={form.is_visible} onChange={v => setForm(f => ({ ...f, is_visible: v }))} />
         </label>
@@ -767,76 +803,6 @@ function ContactSection({ toast }) {
   )
 }
 
-/* ════════════════════════════
-   VISITORS SECTION
-════════════════════════════ */
-function VisitorsSection({ toast }) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  async function search() {
-    if (!query.trim()) return
-    setLoading(true)
-    try {
-      const d = await api('GET', `/api/admin/visitors?name=${encodeURIComponent(query)}`)
-      setResults(d.visitors || [])
-    } catch (e) {
-      toast(e.message, 'error')
-      setResults([])
-    } finally { setLoading(false) }
-  }
-
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="font-bebas text-[2rem] tracking-[0.04em] text-[var(--text)] leading-none">Visitors</h1>
-        <p className="text-[0.82rem] text-[var(--muted)] mt-1">Search visitor records by name</p>
-      </div>
-
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-[480px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-          <input
-            type="text"
-            placeholder="Type a visitor name…"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && search()}
-            className="w-full pl-10 pr-3 py-[0.65rem] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] text-[var(--text)] outline-none focus:border-[var(--red)] focus:shadow-[0_0_0_3px_rgba(192,57,43,0.08)] transition-all"
-          />
-        </div>
-        <button onClick={search} disabled={loading} className="bg-[var(--red)] text-white px-5 py-[0.65rem] rounded-lg text-[0.84rem] font-semibold hover:bg-[var(--red-dark)] transition-all disabled:opacity-60">
-          {loading ? 'Searching…' : 'Search'}
-        </button>
-      </div>
-
-      {results === null && (
-        <div className="flex flex-col items-center gap-3 py-20 text-[var(--muted)]">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-          <p className="text-[0.875rem]">Search for a visitor to see their details.</p>
-        </div>
-      )}
-
-      {results !== null && results.length === 0 && (
-        <p className="text-[var(--muted)] text-[0.875rem] text-center py-16">No visitors found matching that name.</p>
-      )}
-
-      {results !== null && results.length > 0 && (
-        <Table headers={[{ label: 'Name' }, { label: 'Phone' }, { label: 'Business' }, { label: 'Visited At' }]}>
-          {results.map(v => (
-            <tr key={v.id} className="border-b border-[var(--border)] hover:bg-black/[0.015] last:border-0">
-              <td className="px-4 py-3 font-medium">{v.name}</td>
-              <td className="px-4 py-3">{v.phone}</td>
-              <td className="px-4 py-3">{v.business || '—'}</td>
-              <td className="px-4 py-3 text-[0.82rem] text-[var(--muted)]">{v.visited_at || '—'}</td>
-            </tr>
-          ))}
-        </Table>
-      )}
-    </div>
-  )
-}
 
 /* ════════════════════════════
    MAIN DASHBOARD
@@ -845,7 +811,6 @@ const NAV_ITEMS = [
   { key: 'projects', label: 'Projects', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg> },
   { key: 'categories', label: 'Categories', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg> },
   { key: 'contact', label: 'Contact Info', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z" /></svg> },
-  { key: 'visitors', label: 'Visitors', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg> },
 ]
 
 export default function AdminDashboard() {
@@ -930,7 +895,6 @@ export default function AdminDashboard() {
           {active === 'projects' && <ProjectsSection toast={showToast} categories={categories} />}
           {active === 'categories' && <CategoriesSection toast={showToast} />}
           {active === 'contact' && <ContactSection toast={showToast} />}
-          {active === 'visitors' && <VisitorsSection toast={showToast} />}
         </div>
       </main>
 

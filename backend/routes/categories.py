@@ -116,11 +116,16 @@ def _list_admin(respond):
 
 
 def _add(body: dict, respond):
-    slug          = body.get('slug',          [''])[0].strip()
-    name          = body.get('name',          [''])[0].strip()
-    description   = body.get('description',   [''])[0].strip() or None
-    display_order = int(body.get('display_order', ['0'])[0])
-    is_visible    = body.get('is_visible', ['true'])[0].lower() == 'true'
+    def _get_val(key, default=''):
+        val = body.get(key, default)
+        if isinstance(val, list) and len(val) > 0: return val[0]
+        return val
+
+    slug          = _get_val('slug').strip()
+    name          = _get_val('name').strip()
+    description   = _get_val('description').strip() or None
+    display_order = int(_get_val('display_order', '0'))
+    is_visible    = str(_get_val('is_visible', 'true')).lower() == 'true'
 
     if not slug or not name:
         respond(400, 'application/json', {'error': 'Slug and name are required.'})
@@ -138,11 +143,16 @@ def _add(body: dict, respond):
 
 
 def _edit(cat_id: int, body: dict, respond):
-    slug          = body.get('slug',          [''])[0].strip()
-    name          = body.get('name',          [''])[0].strip()
-    description   = body.get('description',   [''])[0].strip() or None
-    display_order = int(body.get('display_order', ['0'])[0])
-    is_visible    = body.get('is_visible', ['true'])[0].lower() == 'true'
+    def _get_val(key, default=''):
+        val = body.get(key, default)
+        if isinstance(val, list) and len(val) > 0: return val[0]
+        return val
+
+    slug          = _get_val('slug').strip()
+    name          = _get_val('name').strip()
+    description   = _get_val('description').strip() or None
+    display_order = int(_get_val('display_order', '0'))
+    is_visible    = str(_get_val('is_visible', 'true')).lower() == 'true'
 
     if not slug or not name:
         respond(400, 'application/json', {'error': 'Slug and name are required.'})
@@ -171,7 +181,9 @@ def _delete(cat_id: int, respond):
 
 
 def _reorder(body: dict, respond):
-    raw = body.get('ids', [''])[0]
+    raw = body.get('ids', '')
+    if isinstance(raw, list) and len(raw) > 0:
+        raw = raw[0]
     try:
         ids = json.loads(raw)
         reorder_categories([int(i) for i in ids])

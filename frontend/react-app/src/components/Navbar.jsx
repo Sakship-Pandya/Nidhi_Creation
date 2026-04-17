@@ -55,16 +55,22 @@ export default function Navbar() {
   }
 
   function scrollToContact(e) {
+    _scrollTo(e, 'contact')
+  }
+
+  function scrollToReviews(e) {
+    _scrollTo(e, 'reviews')
+  }
+
+  function _scrollTo(e, id) {
     e.preventDefault()
     closeAll()
-    // If we're already on the home page, just scroll
     if (location.pathname === '/' || location.pathname === '/home') {
-      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     } else {
-      // Navigate home first, then scroll after render
       navigate('/')
       setTimeout(() => {
-        document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
       }, 300)
     }
   }
@@ -126,6 +132,15 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* Reviews */}
+            <a
+              href="#reviews"
+              onClick={scrollToReviews}
+              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all cursor-pointer"
+            >
+              Reviews
+            </a>
+
             {/* Contact — scrolls to #contact section */}
             <a
               href="#contact"
@@ -166,6 +181,17 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+
+            {/* Reviews in mobile */}
+            <li>
+              <a
+                href="#reviews"
+                onClick={scrollToReviews}
+                className="block text-[0.9rem] text-[var(--muted)] py-3 border-b border-[var(--border)] hover:text-[var(--red)] cursor-pointer"
+              >
+                Reviews
+              </a>
+            </li>
 
             {/* Contact in mobile */}
             <li>

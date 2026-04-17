@@ -6,56 +6,6 @@
 import bcrypt
 from core.config import get_connection
 
-
-# ════════════════════════════════
-# VISITORS
-# ════════════════════════════════
-
-def add_visitor(name: str, phone: str, business: str = None):
-    """Save a new visitor login."""
-    conn = get_connection()
-    cur  = conn.cursor()
-    cur.execute(
-        "INSERT INTO visitors (name, phone, business) VALUES (%s, %s, %s)",
-        (name, phone, business)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def search_visitors_by_name(name: str) -> list[dict]:
-    """
-    Return all visitors whose name contains the search string (case-insensitive).
-    Ordered by most recent first.
-    """
-    conn = get_connection()
-    cur  = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, name, phone, business, visited_at
-        FROM   visitors
-        WHERE  name ILIKE %s
-        ORDER  BY visited_at DESC
-        """,
-        (f'%{name}%',)
-    )
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return [
-        {
-            'id':         r[0],
-            'name':       r[1],
-            'phone':      r[2],
-            'business':   r[3],
-            'visited_at': r[4].strftime('%d %b %Y, %I:%M %p') if r[4] else None,
-        }
-        for r in rows
-    ]
-
-
 # ════════════════════════════════
 # ADMINS
 # ════════════════════════════════
@@ -240,7 +190,8 @@ def get_all_projects(visible_only: bool = False) -> list[dict]:
             p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
             (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
             (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id,
-            (SELECT COUNT(*) FROM project_images WHERE project_id = p.id) as image_count
+            (SELECT COUNT(*) FROM project_images WHERE project_id = p.id) as image_count,
+            p.review_text, p.review_rating
         FROM projects p
         {visibility_clause}
         ORDER BY p.display_order ASC, p.id ASC
@@ -261,7 +212,49 @@ def get_all_projects(visible_only: bool = False) -> list[dict]:
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
             'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
-            'image_count':   r[8]
+            'image_count':   r[8],
+            'review_text':   r[9],
+            'review_rating': r[10]
+        }
+        for r in rows
+    ]
+
+
+def get_projects_with_reviews(limit: int = 7) -> list[dict]:
+    """Return projects that have a review, in random order."""
+    conn = get_connection()
+    cur  = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT 
+            p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
+            (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id,
+            p.review_text, p.review_rating
+        FROM projects p
+        WHERE p.is_visible = TRUE AND p.review_text IS NOT NULL AND p.review_text != ''
+        ORDER BY RANDOM()
+        LIMIT %s
+        """,
+        (limit,)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return [
+        {
+            'id':            r[0],
+            'title':         r[1],
+            'description':   r[2],
+            'display_order': r[3],
+            'is_visible':    r[4],
+            'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
+            'categories':    r[6] or [],
+            'has_cover':     bool(r[7]),
+            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'review_text':   r[8],
+            'review_rating': r[9]
         }
         for r in rows
     ]
@@ -345,7 +338,8 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
 
 
 def add_project(title: str, description: str = None,
-                display_order: int = 0, is_visible: bool = True, categories: list[str] = None) -> int:
+                display_order: int = 0, is_visible: bool = True, categories: list[str] = None,
+                review_text: str = None, review_rating: int = None) -> int:
     """Insert a new project and link its categories. Returns the new row id."""
     if categories is None: categories = []
     
@@ -355,11 +349,11 @@ def add_project(title: str, description: str = None,
     # Insert project
     cur.execute(
         """
-        INSERT INTO projects (title, description, display_order, is_visible)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO projects (title, description, display_order, is_visible, review_text, review_rating)
+        VALUES (%s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
-        (title, description, display_order, is_visible)
+        (title, description, display_order, is_visible, review_text, review_rating)
     )
     new_id = cur.fetchone()[0]
     
@@ -377,7 +371,8 @@ def add_project(title: str, description: str = None,
 
 
 def update_project(project_id: int, title: str, description: str = None, 
-                   display_order: int = 0, is_visible: bool = True, categories: list[str] = None):
+                   display_order: int = 0, is_visible: bool = True, categories: list[str] = None,
+                   review_text: str = None, review_rating: int = None):
     """Update an existing project and its categories."""
     conn = get_connection()
     cur  = conn.cursor()
@@ -385,10 +380,11 @@ def update_project(project_id: int, title: str, description: str = None,
     cur.execute(
         """
         UPDATE projects
-        SET    title = %s, description = %s, display_order = %s, is_visible = %s, updated_at = NOW()
+        SET    title = %s, description = %s, display_order = %s, is_visible = %s,
+               review_text = %s, review_rating = %s, updated_at = NOW()
         WHERE  id = %s
         """,
-        (title, description, display_order, is_visible, project_id)
+        (title, description, display_order, is_visible, review_text, review_rating, project_id)
     )
     
     if categories is not None:

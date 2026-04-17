@@ -107,6 +107,129 @@ function ProjectModal({ project, onClose }) {
   )
 }
 
+function ReviewsSection() {
+  const [reviews, setReviews] = useState([])
+  const [index, setIndex] = useState(0)
+  const [contactPhone, setContactPhone] = useState('')
+
+  useEffect(() => {
+    api('GET', '/api/project-reviews')
+      .then(d => setReviews(d.projects || []))
+      .catch(console.error)
+
+    // Fetch contact info for WhatsApp number
+    api('GET', '/api/contact')
+      .then(d => {
+        if (d.contact && d.contact.phone) {
+          setContactPhone(d.contact.phone.replace(/\D/g, ''))
+        }
+      })
+      .catch(console.error)
+  }, [])
+
+  useEffect(() => {
+    if (reviews.length <= 1) return
+    const t = setInterval(() => {
+      setIndex(i => (i + 1) % reviews.length)
+    }, 6000)
+    return () => clearInterval(t)
+  }, [reviews.length])
+
+  if (reviews.length === 0) return null
+
+  const cur = reviews[index]
+
+  const handleEnquire = (title) => {
+    const phoneNumber = contactPhone || '919876543210'
+    const text = encodeURIComponent(`Hello! I saw the review for your project: "${title}" and would like to know more.`)
+    window.open(`https://wa.me/${phoneNumber}?text=${text}`, '_blank')
+  }
+
+  const Stars = ({ count }) => (
+    <div className="flex gap-1 mb-4">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={i < count ? "#f1c40f" : "#e8e4de"} className="transition-colors">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      ))}
+    </div>
+  )
+
+  return (
+    <section id="reviews" className="bg-[var(--bg)] border-t border-[var(--border)] overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <span className="font-bebas text-[1.1rem] tracking-[0.1em] text-[var(--muted)] block mb-2 uppercase">Client Appreciation</span>
+          <h2 className="font-bebas text-[3rem] leading-none tracking-[0.04em] text-[var(--text)]">Customer Reviews</h2>
+        </div>
+
+        <div className="relative h-[600px] md:h-[450px]">
+          {reviews.map((rev, i) => (
+            <div 
+              key={rev.id}
+              className={`absolute inset-0 flex items-center transition-all duration-1000 ${i === index ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-12 z-0 pointer-events-none'}`}
+            >
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+                
+                {/* Review Content */}
+                <div className="bg-white p-8 md:p-12 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.06)] relative border border-[var(--border)] order-2 md:order-1">
+                  <div className="absolute top-[-15px] left-8 text-[var(--red)] opacity-10 text-8xl font-serif select-none pointer-events-none">“</div>
+                  <Stars count={rev.review_rating} />
+                  <p className="text-[1.1rem] md:text-[1.25rem] text-[var(--text)] italic leading-relaxed mb-8 font-dm relative z-10">
+                    {rev.review_text}
+                  </p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="h-px w-8 bg-[var(--red)]" />
+                    <div>
+                      <span className="font-bebas text-[1.3rem] tracking-[0.05em] text-[var(--text)] block leading-none">
+                        {rev.title}
+                      </span>
+                      <span className="text-[0.65rem] font-bold tracking-[0.15em] uppercase text-[var(--muted)] mt-1 block">Project Completed</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleEnquire(rev.title)}
+                    className="m-8 flex items-center gap-2 bg-[var(--text)] text-white text-[0.72rem] font-bold tracking-[0.15em] uppercase px-5 py-2.5 rounded-sm hover:bg-[var(--red)] transition-all cursor-pointer border-none"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3z"/></svg>
+                    Enquire About This
+                  </button>
+                </div>
+
+                {/* Project Image View */}
+                <div className="aspect-[16/10] md:aspect-square lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl relative order-1 md:order-2">
+                  <img src={rev.cover_url} alt={rev.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-6">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[0.6rem] font-bold tracking-[0.2em] uppercase text-white/60">Featured Project</span>
+                      <span className="text-white text-[0.9rem] font-medium tracking-[0.05em]">{rev.title}</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Carousel indicators */}
+        {reviews.length > 1 && (
+          <div className="flex justify-center gap-3 mt-12">
+            {reviews.map((_, i) => (
+              <button 
+                key={i}
+                onClick={() => setIndex(i)}
+                className={`h-1.5 transition-all rounded-full border-none cursor-pointer ${i === index ? 'w-8 bg-[var(--red)] focus:ring-0' : 'w-2 bg-gray-300 hover:bg-gray-400'}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function ContactSection() {
   const [info, setInfo] = useState(null)
 
@@ -354,6 +477,9 @@ export default function Home() {
           </div>
 
         </section>
+
+        {/* Reviews Section */}
+        <ReviewsSection />
 
         {/* Contact Section (embedded) */}
         <ContactSection />

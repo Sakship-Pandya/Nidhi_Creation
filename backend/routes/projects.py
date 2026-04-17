@@ -21,11 +21,18 @@ from database.modal import (
     get_all_projects, add_project, update_project,
     delete_project, reorder_projects, get_project_cover_image,
     get_project_images_meta, get_image_data, add_project_image,
-    delete_project_image, set_cover_image
+    delete_project_image, set_cover_image, get_projects_with_reviews
 )
 
 
 def handle(method: str, path: str, body: dict, headers, respond):
+    
+    # GET /api/project-reviews (Public)
+    if method == 'GET' and path == '/api/project-reviews':
+        _list_reviews(respond)
+        return
+
+    # ── Public: serve project images ──────────
 
     # ── Public: serve project images ──────────
     # GET /api/project/<id>/cover
@@ -163,12 +170,29 @@ def _list_projects(respond):
         respond(500, 'application/json', {'error': 'Could not fetch projects.'})
 
 
+def _list_reviews(respond):
+    try:
+        projects = get_projects_with_reviews(limit=7)
+        respond(200, 'application/json', {'projects': projects})
+    except Exception as e:
+        print(f'[projects] list reviews error: {e}')
+        respond(500, 'application/json', {'error': 'Could not fetch reviews.'})
+
+
 def _add(body: dict, respond):
-    title         = body.get('title',         [''])[0].strip()
-    categories_str= body.get('categories',    [''])[0].strip()
-    description   = body.get('description',   [''])[0].strip() or None
-    is_visible    = body.get('is_visible',     ['true'])[0].lower() == 'true'
-    display_order = int(body.get('display_order', ['0'])[0])
+    def _get_val(key, default=''):
+        val = body.get(key, default)
+        if isinstance(val, list) and len(val) > 0: return val[0]
+        return val
+
+    title         = _get_val('title').strip()
+    categories_str= _get_val('categories').strip()
+    description   = _get_val('description').strip() or None
+    is_visible    = str(_get_val('is_visible', 'true')).lower() == 'true'
+    display_order = int(_get_val('display_order', '0'))
+    review_text   = _get_val('review_text').strip() or None
+    raw_rating    = str(_get_val('review_rating', '')).strip()
+    review_rating = int(raw_rating) if raw_rating and raw_rating.isdigit() else None
     
     categories = [c.strip() for c in categories_str.split(',') if c.strip()] if categories_str else []
 
@@ -183,6 +207,8 @@ def _add(body: dict, respond):
             description   = description,
             display_order = display_order,
             is_visible    = is_visible,
+            review_text   = review_text,
+            review_rating = review_rating
         )
         # Check if single or multiple images were uploaded
         image_idx = 0
@@ -204,11 +230,19 @@ def _add(body: dict, respond):
 
 
 def _edit(project_id: int, body: dict, respond):
-    title         = body.get('title',         [''])[0].strip()
-    categories_str= body.get('categories',    [''])[0].strip()
-    description   = body.get('description',   [''])[0].strip() or None
-    is_visible    = body.get('is_visible',     ['true'])[0].lower() == 'true'
-    display_order = int(body.get('display_order', ['0'])[0])
+    def _get_val(key, default=''):
+        val = body.get(key, default)
+        if isinstance(val, list) and len(val) > 0: return val[0]
+        return val
+
+    title         = _get_val('title').strip()
+    categories_str= _get_val('categories').strip()
+    description   = _get_val('description').strip() or None
+    is_visible    = str(_get_val('is_visible', 'true')).lower() == 'true'
+    display_order = int(_get_val('display_order', '0'))
+    review_text   = _get_val('review_text').strip() or None
+    raw_rating    = str(_get_val('review_rating', '')).strip()
+    review_rating = int(raw_rating) if raw_rating and raw_rating.isdigit() else None
     
     categories = [c.strip() for c in categories_str.split(',') if c.strip()] if categories_str else []
 
@@ -224,6 +258,8 @@ def _edit(project_id: int, body: dict, respond):
             description   = description,
             display_order = display_order,
             is_visible    = is_visible,
+            review_text   = review_text,
+            review_rating = review_rating
         )
         respond(200, 'application/json', {'status': 'ok'})
     except Exception as e:

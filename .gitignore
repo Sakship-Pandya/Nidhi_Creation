@@ -47,5 +47,11 @@ node_modules/
 frontend/react-app/node_modules/
 .env
 
+
 frontend/react-app/dist/
 frontend/react-app/node_modules/
+
+# Project Documentation and Utilities
+data_flow.md
+README.md
+backend/reset_admin.py

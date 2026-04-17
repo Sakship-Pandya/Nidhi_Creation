@@ -24,8 +24,14 @@ def handle(method: str, path: str, body: dict, headers, respond):
 
 
 def _login(body: dict, respond):
-    username = body.get('username', [''])[0].strip()
-    password = body.get('password', [''])[0]
+    def _get_val(key, default=''):
+        val = body.get(key, default)
+        if isinstance(val, list) and len(val) > 0:
+            return val[0]
+        return val
+
+    username = _get_val('username').strip()
+    password = _get_val('password')
 
     if not username or not password:
         respond(400, 'application/json', {'error': 'Username and password are required.'})
