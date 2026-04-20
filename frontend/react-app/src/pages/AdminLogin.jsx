@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
+import logo from '../assets/logo.png'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -76,15 +77,17 @@ export default function AdminLogin() {
       <div className="w-full max-w-[400px]">
         <div className="bg-white rounded-xl border-t-[3px] border-t-[var(--red)] border border-[rgba(0,0,0,0.1)] shadow-[0_4px_24px_rgba(0,0,0,0.07)] px-10 py-10">
 
-          {/* Brand */}
           <div className="text-center mb-6">
-            <span className="font-bebas text-[2rem] tracking-[0.06em] text-[var(--text)]">
-              Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
-            </span>
-            <div className="mt-1">
-              <span className="inline-block text-[0.7rem] font-semibold tracking-[0.18em] uppercase text-white bg-[var(--red)] px-3 py-[0.2rem] rounded">
-                Admin Panel
-              </span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-2">
+                <span className='text-[var(--red)] text-3xl font-bold'>श्री</span>
+                <img 
+                  src={logo} 
+                  alt="Niddhi Creation" 
+                  className="h-12 w-auto object-contain" 
+                  style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
+                />
+              </div>
             </div>
           </div>
 

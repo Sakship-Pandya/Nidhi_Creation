@@ -12,8 +12,8 @@ function ProjectModal({ project, onClose }) {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => { 
-      if (e.key === 'Escape') onClose() 
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowRight') setCurrentIndex(i => (i + 1) % images.length)
       if (e.key === 'ArrowLeft') setCurrentIndex(i => (i - 1 + images.length) % images.length)
     }
@@ -30,7 +30,7 @@ function ProjectModal({ project, onClose }) {
         if (d.images && d.images.length > 0) setImages(d.images)
       })
       .catch(console.error)
-      
+
     // Fetch contact info for WhatsApp number
     api('GET', '/api/contact')
       .then(d => {
@@ -63,19 +63,19 @@ function ProjectModal({ project, onClose }) {
 
         {images.length > 0 ? (
           <div className="w-full aspect-[4/3] relative overflow-hidden rounded-t-xl bg-[var(--bg)] group">
-            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover"/>
-            
+            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover" />
+
             {images.length > 1 && (
               <>
                 <button onClick={() => setCurrentIndex(i => (i - 1 + images.length) % images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                 </button>
                 <button onClick={() => setCurrentIndex(i => (i + 1) % images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                 </button>
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {images.map((_, idx) => (
-                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`}/>
+                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`} />
                   ))}
                 </div>
               </>
@@ -149,7 +149,7 @@ function ReviewsSection() {
     <div className="flex gap-1 mb-4">
       {Array.from({ length: 5 }).map((_, i) => (
         <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={i < count ? "#f1c40f" : "#e8e4de"} className="transition-colors">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
       ))}
     </div>
@@ -160,17 +160,17 @@ function ReviewsSection() {
       <div className="max-w-[1200px] mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <span className="font-bebas text-[1.1rem] tracking-[0.1em] text-[var(--muted)] block mb-2 uppercase">Client Appreciation</span>
-          <h2 className="font-bebas text-[3rem] leading-none tracking-[0.04em] text-[var(--text)]">Customer Reviews</h2>
+          <h2 className="font-bebas text-[2.2rem] md:text-[3rem] leading-none tracking-[0.04em] text-[var(--text)]">Customer Reviews</h2>
         </div>
 
-        <div className="relative h-[600px] md:h-[450px]">
+        <div className="relative h-[650px] sm:h-[600px] md:h-[450px]">
           {reviews.map((rev, i) => (
-            <div 
+            <div
               key={rev.id}
               className={`absolute inset-0 flex items-center transition-all duration-1000 ${i === index ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-12 z-0 pointer-events-none'}`}
             >
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-                
+
                 {/* Review Content */}
                 <div className="bg-white p-8 md:p-12 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.06)] relative border border-[var(--border)] order-2 md:order-1">
                   <div className="absolute top-[-15px] left-8 text-[var(--red)] opacity-10 text-8xl font-serif select-none pointer-events-none">“</div>
@@ -190,15 +190,15 @@ function ReviewsSection() {
                   </div>
                   <button
                     onClick={() => handleEnquire(rev.title)}
-                    className="m-8 flex items-center gap-2 bg-[var(--text)] text-white text-[0.72rem] font-bold tracking-[0.15em] uppercase px-5 py-2.5 rounded-sm hover:bg-[var(--red)] transition-all cursor-pointer border-none"
+                    className="mt-6 flex items-center gap-2 bg-[var(--text)] text-white text-[0.72rem] font-bold tracking-[0.15em] uppercase px-5 py-2.5 rounded-sm hover:bg-[var(--red)] transition-all cursor-pointer border-none"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3z"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3z" /></svg>
                     Enquire About This
                   </button>
                 </div>
 
                 {/* Project Image View */}
-                <div className="aspect-[16/10] md:aspect-square lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl relative order-1 md:order-2">
+                <div className="aspect-video md:aspect-square lg:aspect-[4/3] w-full max-w-[400px] mx-auto md:max-w-none rounded-2xl overflow-hidden shadow-2xl relative order-1 md:order-2">
                   <img src={rev.cover_url} alt={rev.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-6">
                     <div className="flex flex-col gap-1">
@@ -217,7 +217,7 @@ function ReviewsSection() {
         {reviews.length > 1 && (
           <div className="flex justify-center gap-3 mt-12">
             {reviews.map((_, i) => (
-              <button 
+              <button
                 key={i}
                 onClick={() => setIndex(i)}
                 className={`h-1.5 transition-all rounded-full border-none cursor-pointer ${i === index ? 'w-8 bg-[var(--red)] focus:ring-0' : 'w-2 bg-gray-300 hover:bg-gray-400'}`}
@@ -255,9 +255,6 @@ function ContactSection() {
     <section id="contact" className="border-t border-[var(--border)] bg-white">
       <div className="max-w-[1200px] mx-auto px-6 py-16">
         <div className="mb-10">
-          <span className="font-bebas text-[1.1rem] tracking-[0.08em] text-[var(--muted)]">
-            Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
-          </span>
           <h2 className="font-bebas text-[2.5rem] leading-none tracking-[0.04em] text-[var(--text)] mt-1 mb-2">Contact Us</h2>
           <p className="text-[0.92rem] text-[var(--muted)]">Get in touch — we'll get back to you within 24 hours.</p>
         </div>
@@ -268,25 +265,25 @@ function ContactSection() {
             <h3 className="font-bebas text-[1.5rem] tracking-[0.04em] text-[var(--text)] mb-6">Our Details</h3>
 
             <div className="flex flex-col gap-5">
-              <InfoItem label="Phone" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>}>
+              <InfoItem label="Phone" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z" /></svg>}>
                 <a href={`tel:${info?.phone || ''}`} className="text-[0.9rem] text-[var(--text)] hover:text-[var(--red)] transition-colors">
                   {info?.phone || '+91 98765 43210'}
                 </a>
               </InfoItem>
 
-              <InfoItem label="Email" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>}>
+              <InfoItem label="Email" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>}>
                 <a href={`mailto:${info?.email || ''}`} className="text-[0.9rem] text-[var(--text)] hover:text-[var(--red)] transition-colors">
                   {info?.email || 'info@nidhicreation.in'}
                 </a>
               </InfoItem>
 
-              <InfoItem label="Address" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>}>
+              <InfoItem label="Address" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>}>
                 <span className="text-[0.9rem] text-[var(--text)] leading-relaxed">
                   {info?.address || '123, Signboard Market, Ahmedabad, Gujarat — 380001'}
                 </span>
               </InfoItem>
 
-              <InfoItem label="Working Hours" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}>
+              <InfoItem label="Working Hours" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>}>
                 <span className="text-[0.9rem] text-[var(--text)]">
                   {info?.working_hours || 'Mon – Sat: 9:00 AM – 7:00 PM'}
                 </span>
@@ -337,7 +334,7 @@ function HeroCarousel({ projects, onSelect }) {
   const current = carouselItems[index]
 
   return (
-    <div className="w-full h-[60vh] min-h-[400px] max-h-[600px] relative overflow-hidden bg-[var(--bg)] group">
+    <div className="w-full h-[50vh] min-h-[350px] max-h-[500px] relative overflow-hidden bg-[var(--bg)] group">
       {/* Images Background */}
       {carouselItems.map((p, i) => (
         <div
@@ -350,11 +347,8 @@ function HeroCarousel({ projects, onSelect }) {
       ))}
 
       {/* Content */}
-      <div className="absolute inset-0 z-20 flex flex-col justify-end pb-16 px-8 max-w-[1200px] mx-auto pointer-events-none">
-        <span className="text-[0.75rem] font-bold tracking-[0.2em] uppercase text-[var(--red)] mb-2 drop-shadow-md">
-          Featured Work
-        </span>
-        <h2 className="font-bebas text-[4rem] leading-none tracking-[0.02em] text-white mb-2 drop-shadow-lg">
+      <div className="absolute inset-0 z-20 flex flex-col justify-end pb-10 px-8 max-w-[1200px] mx-auto pointer-events-none">
+        <h2 className="font-bebas text-[3rem] md:text-[4rem] leading-none tracking-[0.02em] text-white mb-2 drop-shadow-lg">
           {current.title}
         </h2>
         <span className="text-[0.85rem] text-white/80 font-medium tracking-[0.05em] uppercase mb-6">
@@ -375,13 +369,13 @@ function HeroCarousel({ projects, onSelect }) {
             onClick={() => setIndex(i => (i - 1 + carouselItems.length) % carouselItems.length)}
             className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-black/30 backdrop-blur text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)] border-none cursor-pointer"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
           </button>
           <button
             onClick={() => setIndex(i => (i + 1) % carouselItems.length)}
             className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-black/30 backdrop-blur text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)] border-none cursor-pointer"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
           </button>
 
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2">
@@ -402,7 +396,7 @@ function HeroCarousel({ projects, onSelect }) {
 
 export default function Home() {
   const [projects, setProjects] = useState([])
-  const [loading,  setLoading]  = useState(true)
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
@@ -430,20 +424,20 @@ export default function Home() {
           <div className="flex items-center justify-between mb-10">
             <h2 className="font-bebas text-[2.5rem] tracking-[0.04em] text-[var(--text)]">
               Past Works
-            </h2> 
+            </h2>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 md:grid-cols-3 sm:grid-cols-2 grid-cols-1">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="border border-[var(--border)] rounded-md overflow-hidden bg-white">
-                    <div className="aspect-[4/3] animate-pulse bg-[#e8e4de]"/>
-                    <div className="p-4 flex flex-col gap-2">
-                      <div className="h-3 rounded bg-[#e8e4de] animate-pulse"/>
-                      <div className="h-3 rounded bg-[#e8e4de] animate-pulse w-3/5"/>
-                    </div>
+                <div key={i} className="border border-[var(--border)] rounded-md overflow-hidden bg-white">
+                  <div className="aspect-[4/3] animate-pulse bg-[#e8e4de]" />
+                  <div className="p-4 flex flex-col gap-2">
+                    <div className="h-3 rounded bg-[#e8e4de] animate-pulse" />
+                    <div className="h-3 rounded bg-[#e8e4de] animate-pulse w-3/5" />
                   </div>
-                ))
+                </div>
+              ))
               : projects.length === 0
                 ? (
                   <p className="col-span-3 text-center text-[var(--muted)] py-20 text-[0.9rem]">
@@ -451,28 +445,28 @@ export default function Home() {
                   </p>
                 )
                 : projects.map(p => (
-                    <div
-                      key={p.id}
-                      id={`card-${p.id}`}
-                      className="border border-[var(--border)] rounded-md overflow-hidden bg-white cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] transition-all group"
-                      onClick={() => setSelected(p)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && setSelected(p)}
-                      aria-label={`View details for ${p.title}`}
-                    >
-                      <div className="aspect-[4/3] relative overflow-hidden bg-[var(--bg)] flex items-center justify-center">
-                        {p.cover_url
-                          ? <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
-                          : <span className="text-4xl text-[var(--muted)] opacity-30">◈</span>
-                        }
-                      </div>
-                      <div className="p-4 border-t border-[var(--border)]">
-                        <h4 className="text-[0.9rem] font-semibold text-[var(--text)] mb-1">{p.title}</h4>
-                        <span className="text-[0.72rem] text-[var(--red)] tracking-[0.08em] uppercase">{(p.categories || []).join(' / ')}</span>
-                      </div>
+                  <div
+                    key={p.id}
+                    id={`card-${p.id}`}
+                    className="border border-[var(--border)] rounded-md overflow-hidden bg-white cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] transition-all group"
+                    onClick={() => setSelected(p)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === 'Enter' && setSelected(p)}
+                    aria-label={`View details for ${p.title}`}
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden bg-[var(--bg)] flex items-center justify-center">
+                      {p.cover_url
+                        ? <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        : <span className="text-4xl text-[var(--muted)] opacity-30">◈</span>
+                      }
                     </div>
-                  ))
+                    <div className="p-4 border-t border-[var(--border)]">
+                      <h4 className="text-[0.9rem] font-semibold text-[var(--text)] mb-1">{p.title}</h4>
+                      <span className="text-[0.72rem] text-[var(--red)] tracking-[0.08em] uppercase">{(p.categories || []).join(' / ')}</span>
+                    </div>
+                  </div>
+                ))
             }
           </div>
 

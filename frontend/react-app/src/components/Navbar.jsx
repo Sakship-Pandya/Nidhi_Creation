@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api'
+import logo from '../assets/logo.png'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -79,14 +80,19 @@ export default function Navbar() {
     <>
       <nav className={`
         fixed top-0 left-0 right-0 h-16 z-[200]
-        border-b border-[var(--border)] transition-all duration-300
-        ${scrolled ? 'bg-[rgba(245,243,238,0.99)] shadow-sm' : 'bg-[rgba(245,243,238,0.90)] backdrop-blur-[14px]'}
+        border-b transition-all duration-300
+        ${scrolled ? 'bg-[var(--brand-green)] border-white/10 shadow-md' : 'bg-[var(--brand-green)] backdrop-blur-[14px] border-white/5'}
       `}>
         <div className="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
 
-          {/* Brand */}
-          <Link to="/" className="font-bebas text-[1.4rem] tracking-[0.06em] text-[var(--text)]" onClick={closeAll}>
-            Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center" onClick={closeAll}>
+            <img 
+              src={logo} 
+              alt="Niddhi Creation" 
+              className="h-16 w-32 object-contain" 
+              style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
+            />
           </Link>
 
           {/* Desktop Nav */}
@@ -106,7 +112,7 @@ export default function Navbar() {
             >
               {/* Categories */}
               <button
-                className="flex items-center gap-1 text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all bg-transparent border-none cursor-pointer"
+                className="flex items-center gap-1 text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all bg-transparent border-none cursor-pointer"
                 onClick={() => setDropOpen(d => !d)}
                 aria-expanded={dropOpen}
               >
@@ -136,19 +142,21 @@ export default function Navbar() {
             <a
               href="#reviews"
               onClick={scrollToReviews}
-              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all cursor-pointer"
+              className="text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
             >
               Reviews
             </a>
 
             {/* Contact — scrolls to #contact section */}
-            <a
-              href="#contact"
-              onClick={scrollToContact}
-              className="text-[0.85rem] font-medium text-[var(--muted)] px-3 py-2 rounded hover:text-[var(--text)] hover:bg-black/5 transition-all cursor-pointer"
-            >
-              Contact Us
-            </a>
+            {!location.pathname.startsWith('/category') && (
+              <a
+                href="#contact"
+                onClick={scrollToContact}
+                className="text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                Contact Us
+              </a>
+            )}
 
           </div>
 
@@ -158,9 +166,9 @@ export default function Navbar() {
             onClick={() => setMenuOpen(m => !m)}
             aria-label="Toggle menu"
           >
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? 'opacity-0' : ''}`} />
-            <span className={`block w-[22px] h-[2px] bg-[var(--text)] ${menuOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-white/90 ${menuOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-white/90 ${menuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-[22px] h-[2px] bg-white/90 ${menuOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
           </button>
 
         </div>
@@ -168,13 +176,13 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="fixed top-16 left-0 right-0 z-[199] bg-[rgba(245,243,238,0.99)] border-b border-[var(--border)] shadow md:hidden">
+        <div className="fixed top-16 left-0 right-0 z-[199] bg-[var(--brand-green)] border-b border-white/10 shadow md:hidden">
           <ul className="flex flex-col px-6 py-3">
             {categories.map(c => (
               <li key={c.slug}>
                 <Link
                   to={`/category/${c.slug}`}
-                  className="block text-[0.9rem] text-[var(--muted)] py-3 border-b border-[var(--border)] hover:text-[var(--red)]"
+                  className="block text-[0.9rem] text-white/80 py-3 border-b border-white/5 hover:text-[var(--red)] transition-colors"
                   onClick={closeAll}
                 >
                   {c.name}
@@ -194,15 +202,17 @@ export default function Navbar() {
             </li>
 
             {/* Contact in mobile */}
-            <li>
-              <a
-                href="#contact"
-                onClick={scrollToContact}
-                className="block text-[0.9rem] text-[var(--muted)] py-3 hover:text-[var(--red)] cursor-pointer"
-              >
-                Contact Us
-              </a>
-            </li>
+            {!location.pathname.startsWith('/category') && (
+              <li>
+                <a
+                  href="#contact"
+                  onClick={scrollToContact}
+                  className="block text-[0.9rem] text-[var(--muted)] py-3 hover:text-[var(--red)] cursor-pointer"
+                >
+                  Contact Us
+                </a>
+              </li>
+            )}
           </ul>
         </div>
       )}

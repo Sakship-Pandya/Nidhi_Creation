@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
+import logo from '../assets/logo.png'
 
 /* ════════════════════════════
    SHARED HELPERS
@@ -839,16 +840,19 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
-      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--text)] flex flex-col z-[100] transition-transform duration-300`}
+      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--brand-green)] flex flex-col z-[100] transition-transform duration-300`}
         style={{ transform: sidebarOpen || window.innerWidth > 900 ? 'translateX(0)' : 'translateX(-100%)' }}
       >
         <div className="px-6 py-5 border-b border-white/[0.08] flex-shrink-0">
-          <span className="font-bebas text-[1.3rem] tracking-[0.06em] text-white block">
-            Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
-          </span>
-          <span className="inline-block mt-1 text-[0.62rem] font-semibold tracking-[0.18em] uppercase text-white bg-[var(--red)] px-2 py-[0.18rem] rounded">
-            Admin
-          </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="h-32 flex items-center">
+              <img 
+                src={logo} 
+                alt="Niddhi Creation" 
+                className="h-32 w-auto object-contain" 
+              />
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
@@ -885,10 +889,6 @@ export default function AdminDashboard() {
             <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
           </button>
           <span className="font-bebas text-[1.25rem] tracking-[0.06em] text-[var(--text)] flex-1">{activeLabel}</span>
-          <span className="inline-flex items-center gap-1 text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--red)] bg-[rgba(192,57,43,0.08)] px-3 py-[0.3rem] rounded-full">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-            Admin
-          </span>
         </header>
 
         <div className="p-7 max-sm:p-4 flex-1">

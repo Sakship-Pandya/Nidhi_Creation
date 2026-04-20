@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api/index.js'
+import logo from '../assets/logo.png'
 
 function timeAgo(dateStr) {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000)
   const intervals = [
     { label: 'year', secs: 31536000 }, { label: 'month', secs: 2592000 },
-    { label: 'week', secs: 604800 },   { label: 'day',   secs: 86400 },
-    { label: 'hour', secs: 3600 },     { label: 'minute', secs: 60 },
+    { label: 'week', secs: 604800 }, { label: 'day', secs: 86400 },
+    { label: 'hour', secs: 3600 }, { label: 'minute', secs: 60 },
   ]
   for (const { label, secs } of intervals) {
     const count = Math.floor(seconds / secs)
@@ -25,8 +26,8 @@ function ProjectModal({ project, onClose }) {
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => { 
-      if (e.key === 'Escape') onClose() 
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowRight') setCurrentIndex(i => (i + 1) % images.length)
       if (e.key === 'ArrowLeft') setCurrentIndex(i => (i - 1 + images.length) % images.length)
     }
@@ -68,19 +69,19 @@ function ProjectModal({ project, onClose }) {
 
         {images.length > 0 ? (
           <div className="w-full aspect-[4/3] relative overflow-hidden rounded-t-xl bg-[var(--bg)] group">
-            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover"/>
-            
+            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover" />
+
             {images.length > 1 && (
               <>
                 <button onClick={() => setCurrentIndex(i => (i - 1 + images.length) % images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                 </button>
                 <button onClick={() => setCurrentIndex(i => (i + 1) % images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                 </button>
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {images.map((_, idx) => (
-                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`}/>
+                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`} />
                   ))}
                 </div>
               </>
@@ -112,11 +113,11 @@ function ProjectModal({ project, onClose }) {
 }
 
 export default function Category() {
-  const { slug } = useParams() 
-  const [state, setState]     = useState('loading')  // loading | items | empty | error
+  const { slug } = useParams()
+  const [state, setState] = useState('loading')  // loading | items | empty | error
   const [category, setCategory] = useState(null)
   const [projects, setProjects] = useState([])
-  const [errMsg, setErrMsg]   = useState('')
+  const [errMsg, setErrMsg] = useState('')
   const [selected, setSelected] = useState(null)
   const [scrolled, setScrolled] = useState(false)
 
@@ -144,12 +145,16 @@ export default function Category() {
   return (
     <>
       {/* Minimal navbar for category page */}
-      <nav className={`fixed top-0 left-0 right-0 h-16 z-[200] border-b border-[var(--border)] transition-all ${scrolled ? 'bg-[rgba(245,243,238,0.99)]' : 'bg-[rgba(245,243,238,0.9)] backdrop-blur-sm'}`}>
+      <nav className={`fixed top-0 left-0 right-0 h-16 z-[200] border-b transition-all ${scrolled ? 'bg-[var(--brand-green)] border-white/10' : 'bg-[var(--brand-green)] backdrop-blur-sm border-white/5'}`}>
         <div className="max-w-[1200px] mx-auto px-8 h-full flex items-center justify-between">
-          <Link to="/home" className="font-bebas text-[1.4rem] tracking-[0.06em] text-[var(--text)]">
-            Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
+          <Link to="/home" className="flex items-center">
+            <img
+              src={logo}
+              alt="Niddhi Creation"
+              className="h-16 w-32 object-contain" 
+              style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
+            />
           </Link>
-          <a href="/#contact" className="text-[0.85rem] font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors">Contact</a>
         </div>
       </nav>
 
@@ -157,9 +162,6 @@ export default function Category() {
         {/* Category header */}
         <div className="max-w-[1200px] mx-auto px-8 pt-10 pb-6">
           <Link to="/home" className="text-[0.82rem] text-[var(--muted)] hover:text-[var(--red)] transition-colors mb-4 inline-block">← All Categories</Link>
-          <p className="font-bebas text-[1rem] tracking-[0.08em] text-[var(--muted)] mb-1">
-            Nidhi <em className="not-italic text-[var(--red)]">Creation</em>
-          </p>
           <h1 className="font-bebas text-[3rem] leading-none tracking-[0.03em] text-[var(--text)] mb-2">
             {category?.name || '…'}
           </h1>
@@ -175,14 +177,14 @@ export default function Category() {
 
           {/* Loading */}
           {state === 'loading' && (
-            <div className="grid grid-cols-3 gap-5 max-md:grid-cols-2 max-sm:grid-cols-1">
+            <div className="grid grid-cols-3 gap-5 max-md:grid-cols-2 max-sm:grid-cols-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="border border-[var(--border)] rounded-lg overflow-hidden bg-white">
-                  <div className="aspect-[4/3] skeleton"/>
+                  <div className="aspect-[4/3] skeleton" />
                   <div className="p-4">
-                    <div className="skeleton h-3 rounded mb-2"/>
-                    <div className="skeleton h-3 rounded w-3/5 mb-1"/>
-                    <div className="skeleton h-3 rounded w-2/5"/>
+                    <div className="skeleton h-3 rounded mb-2" />
+                    <div className="skeleton h-3 rounded w-3/5 mb-1" />
+                    <div className="skeleton h-3 rounded w-2/5" />
                   </div>
                 </div>
               ))}
@@ -191,7 +193,7 @@ export default function Category() {
 
           {/* Items */}
           {state === 'items' && (
-            <div className="grid grid-cols-3 gap-5 max-md:grid-cols-2 max-sm:grid-cols-1">
+            <div className="grid grid-cols-3 gap-5 max-md:grid-cols-2 max-sm:grid-cols-2">
               {projects.map(p => (
                 <div
                   key={p.id}
@@ -202,7 +204,7 @@ export default function Category() {
                   onKeyDown={e => e.key === 'Enter' && setSelected(p)}
                 >
                   <div className="aspect-[4/3] relative overflow-hidden bg-[var(--bg)]">
-                    <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                    <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                   </div>
                   <div className="p-4">
                     <h3 className="text-[0.95rem] font-semibold text-[var(--text)] mb-1">{p.title}</h3>

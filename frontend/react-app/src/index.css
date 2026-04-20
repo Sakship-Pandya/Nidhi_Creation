@@ -1,6 +1,19 @@
+@font-face {
+  font-family: 'Vivaldi';
+  src: url('./assets/Vivaldi.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .font-vivaldi {
+    font-family: 'Vivaldi', serif;
+  }
+}
 
 @layer base {
   :root {
@@ -11,6 +24,8 @@
     --muted:     #7a7065;
     --red:       #c0392b;
     --red-dark:  #a93226;
+    --brand-green: #126531;
+    --brand-gold:  #f9f1c7;
     --blue:      #2980b9;
     --green:     #27ae60;
     --error:     #e74c3c;
