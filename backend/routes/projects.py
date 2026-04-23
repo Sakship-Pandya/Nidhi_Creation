@@ -23,6 +23,7 @@ from database.modal import (
     get_project_images_meta, get_image_data, add_project_image,
     delete_project_image, set_cover_image, get_projects_with_reviews
 )
+from core.image_utils import process_image
 
 
 def handle(method: str, path: str, body: dict, headers, respond):
@@ -219,8 +220,21 @@ def _add(body: dict, respond):
                 break
             image_data = body[img_key][0]
             image_mime = body.get(mime_key, ['image/jpeg'])[0]
+            
             if image_data:
-                add_project_image(new_id, image_data, image_mime, is_cover=(image_idx == 0))
+                # Limit raw upload size to 10MB to avoid memory issues
+                if len(image_data) > 10 * 1024 * 1024:
+                    print(f"[projects] image {img_key} too large: {len(image_data)} bytes")
+                    continue
+
+                # Process image (resize/compress)
+                try:
+                    processed_data, processed_mime = process_image(image_data)
+                    add_project_image(new_id, processed_data, processed_mime, is_cover=(image_idx == 0))
+                except Exception as img_err:
+                    print(f"[projects] image processing error: {img_err}")
+                    # Fallback to original if processing fails (or skip?)
+                    add_project_image(new_id, image_data, image_mime, is_cover=(image_idx == 0))
             image_idx += 1
 
         respond(200, 'application/json', {'status': 'ok', 'id': new_id})
@@ -293,9 +307,24 @@ def _add_image(project_id: int, body: dict, respond):
     if not image_data:
         respond(400, 'application/json', {'error': 'No image provided.'})
         return
+        
+    if len(image_data) > 10 * 1024 * 1024:
+        respond(400, 'application/json', {'error': 'Image is too large (max 10MB).'})
+        return
+
     try:
-        add_project_image(project_id, image_data, image_mime)
-        respond(200, 'application/json', {'status': 'ok'})
+        # Process image
+        processed_data, processed_mime = process_image(image_data)
+        new_id = add_project_image(project_id, processed_data, processed_mime)
+        respond(200, 'application/json', {'status': 'ok', 'image_id': new_id})
+    except Exception as e:
+        print(f'[projects] add image error: {e}')
+        # Fallback to original if processing fails
+        try:
+            new_id = add_project_image(project_id, image_data, image_mime)
+            respond(200, 'application/json', {'status': 'ok', 'image_id': new_id})
+        except Exception as e2:
+            respond(500, 'application/json', {'error': 'Could not add image.'})
     except Exception as e:
         print(f'[projects] add image error: {e}')
         respond(500, 'application/json', {'error': 'Could not add image.'})

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api'
 import logo from '../assets/logo.png'
+import tagline from '../assets/tagline.png'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -81,17 +82,21 @@ export default function Navbar() {
       <nav className={`
         fixed top-0 left-0 right-0 h-16 z-[200]
         border-b transition-all duration-300
-        ${scrolled ? 'bg-[var(--brand-green)] border-white/10 shadow-md' : 'bg-[var(--brand-green)] backdrop-blur-[14px] border-white/5'}
+        bg-[var(--brand-green)] border-white/10 shadow-lg
       `}>
         <div className="max-w-[1200px] mx-auto px-6 h-full flex items-center justify-between">
-
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center" onClick={closeAll}>
-            <img 
-              src={logo} 
-              alt="Niddhi Creation" 
-              className="h-16 w-32 object-contain" 
+          <Link to="/" className="flex items-center gap-2" onClick={closeAll}>
+            <img
+              src={logo}
+              alt="Niddhi Creation"
+              className="h-16 w-auto object-contain"
               style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
+            />
+            <img
+              src={tagline}
+              alt="Tagline"
+              className="h-10 w-auto object-contain hidden sm:block"
             />
           </Link>
 

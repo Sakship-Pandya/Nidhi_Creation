@@ -211,7 +211,7 @@ def get_all_projects(visible_only: bool = False) -> list[dict]:
             'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
-            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
             'image_count':   r[8],
             'review_text':   r[9],
             'review_rating': r[10]
@@ -252,7 +252,7 @@ def get_projects_with_reviews(limit: int = 7) -> list[dict]:
             'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
-            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
             'review_text':   r[8],
             'review_rating': r[9]
         }
@@ -294,7 +294,7 @@ def get_projects_by_category(category_slug: str,
             'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
-            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
         }
         for r in rows
     ]
@@ -331,7 +331,7 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
             'created_at':    r[5].strftime('%d %b %Y') if r[5] else None,
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
-            'cover_url':     f'/api/project/{r[0]}/cover' if r[7] else None,
+            'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
         }
         for r in rows
     ]
@@ -473,7 +473,7 @@ def get_project_images_meta(project_id: int) -> list[dict]:
     conn = get_connection()
     cur  = conn.cursor()
     cur.execute(
-        "SELECT id, is_cover, display_order FROM project_images WHERE project_id = %s ORDER BY display_order ASC, id ASC",
+        "SELECT id, is_cover, display_order FROM project_images WHERE project_id = %s ORDER BY is_cover DESC, display_order ASC, id ASC",
         (project_id,)
     )
     rows = cur.fetchall()
@@ -512,12 +512,15 @@ def add_project_image(project_id: int, image_data: bytes, image_mime: str, is_co
         """
         INSERT INTO project_images (project_id, image_data, image_mime, is_cover, display_order)
         VALUES (%s, %s, %s, %s, %s)
+        RETURNING id
         """,
         (project_id, image_data, image_mime, is_cover, next_order)
     )
+    new_id = cur.fetchone()[0]
     conn.commit()
     cur.close()
     conn.close()
+    return new_id
 
 
 def set_cover_image(project_id: int, image_id: int):

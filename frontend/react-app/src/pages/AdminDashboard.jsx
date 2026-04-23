@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
 import logo from '../assets/logo.png'
+import tagline from '../assets/tagline.png'
 
 /* ════════════════════════════
    SHARED HELPERS
@@ -92,14 +93,52 @@ function NcTextarea({ label, error, rows = 3, ...props }) {
 /* ════════════════════════════
    IMAGE UPLOAD ZONE
 ════════════════════════════ */
-function MultiImageUpload({ images, setImages, existingImages, onSetCover, onDeleteExisting }) {
+function MultiImageUpload({ images, setImages, existingImages, setExistingImages, onSetCover, onDeleteExisting }) {
   const inputRef = useRef(null)
   const [dragging, setDragging] = useState(false)
+  const [hoveredExisting, setHoveredExisting] = useState(null)
+  const [hoveredNew, setHoveredNew] = useState(null)
 
   function handleFiles(files) {
     if (!files) return
-    const valid = Array.from(files).filter(f => f.type.startsWith('image/'))
-    setImages(prev => [...prev, ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f) }))])
+    const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+    const valid = []
+    const oversized = []
+
+    Array.from(files).forEach(f => {
+      if (!f.type.startsWith('image/')) return
+      if (f.size > MAX_SIZE) {
+        oversized.push(f.name)
+      } else {
+        valid.push(f)
+      }
+    })
+
+    if (oversized.length > 0) {
+      alert(`The following images are too large (max 10MB):\n${oversized.join('\n')}`)
+    }
+
+    if (valid.length > 0) {
+      setImages(prev => {
+        const next = [...prev, ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f), isCover: false }))]
+        // If no cover is set in existing or new, make the first new one cover
+        const hasExistingCover = existingImages?.some(img => img.is_cover)
+        const hasNewCover = next.some(img => img.isCover)
+        if (!hasExistingCover && !hasNewCover && next.length > 0) {
+          next[0].isCover = true
+        }
+        return next
+      })
+    }
+  }
+
+  function setAsNewCover(index) {
+    // Only allow one new cover at a time
+    setImages(prev => prev.map((img, i) => ({ ...img, isCover: i === index })))
+    // Clear any existing cover indicators in the UI (until saved)
+    if (setExistingImages) {
+      setExistingImages(prev => prev.map(img => ({ ...img, is_cover: false })))
+    }
   }
 
   function removeNew(index) {
@@ -109,9 +148,9 @@ function MultiImageUpload({ images, setImages, existingImages, onSetCover, onDel
   return (
     <div className="flex flex-col gap-3">
       <div
-        className={`border-2 border-dashed rounded-lg min-h-[100px] flex gap-3 flex-wrap items-center p-4 cursor-pointer transition-all ${dragging ? 'border-[var(--red)] bg-[rgba(192,57,43,0.03)]' : 'border-[var(--border)] bg-[var(--bg)]'} hover:border-[var(--red)]`}
+        className={`border-2 border-dashed rounded-lg min-h-[100px] flex gap-3 flex-wrap items-center p-4 transition-all ${dragging ? 'border-[var(--red)] bg-[rgba(192,57,43,0.03)]' : 'border-[var(--border)] bg-[var(--bg)]'} hover:border-[var(--red)]`}
         onClick={(e) => {
-          if (e.target.closest('.img-action')) return 
+          if (e.target.closest('.img-action')) return
           inputRef.current?.click()
         }}
         onDragOver={e => { e.preventDefault(); setDragging(true) }}
@@ -119,44 +158,100 @@ function MultiImageUpload({ images, setImages, existingImages, onSetCover, onDel
         onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files) }}
       >
         <input ref={inputRef} type="file" multiple accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
-        
+
         {/* Existing Images (from DB) */}
         {existingImages && existingImages.map((img) => (
-          <div key={img.id} className="relative w-20 h-20 rounded overflow-hidden border border-[var(--border)] group bg-white shrink-0">
-            <img src={img.url} alt="Project image" className="w-full h-full object-cover"/>
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 img-action">
-              {!img.is_cover && (
-                <button title="Set as cover" onClick={(e) => { e.stopPropagation(); onSetCover(img.id) }} className="bg-white/90 rounded text-[0.6rem] px-2 py-1 font-semibold uppercase tracking-wider hover:bg-white text-[var(--text)]">Cover</button>
+          <div
+            key={img.id}
+            className="relative shrink-0 cursor-pointer"
+            style={{ width: 96, height: 96 }}
+            onMouseEnter={() => setHoveredExisting(img.id)}
+            onMouseLeave={() => setHoveredExisting(null)}
+            onClick={(e) => { e.stopPropagation(); if (!img.is_cover) onSetCover(img.id) }}
+          >
+            {/* Image frame */}
+            <div className={`w-full h-full rounded overflow-hidden border transition-all ${img.is_cover ? 'border-[var(--red)] ring-2 ring-[var(--red)]/20' : 'border-[var(--border)]'}`}>
+              <img src={img.url} alt="Project image" className="w-full h-full object-cover" />
+              {img.is_cover && <div className="absolute inset-0 bg-[var(--red)]/5 pointer-events-none" />}
+              {img.is_cover && (
+                <div className="absolute bottom-1 right-1 bg-[var(--red)] text-white text-[0.5rem] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-10">Cover</div>
               )}
-              <button title="Delete image" onClick={(e) => { e.stopPropagation(); onDeleteExisting(img.id) }} className="bg-[var(--error)]/90 rounded text-[0.6rem] px-2 py-1 font-semibold uppercase tracking-wider hover:bg-[var(--error)] text-white">Del</button>
             </div>
-            {img.is_cover && <div className="absolute top-1 left-1 bg-[var(--red)] text-white text-[0.55rem] px-1 rounded font-bold uppercase tracking-wider shadow">Cover</div>}
+            {/* Delete button — outside overflow:hidden */}
+            <button
+              type="button"
+              className="img-action absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-white transition-all z-40"
+              style={{
+                background: 'rgba(20,20,20,0.85)',
+                opacity: hoveredExisting === img.id ? 1 : 0,
+                pointerEvents: hoveredExisting === img.id ? 'auto' : 'none',
+              }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteExisting(img.id) }}
+              title="Delete image"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         ))}
 
         {/* New uploaded Images */}
         {images.map((img, i) => (
-          <div key={i} className="relative w-20 h-20 rounded overflow-hidden border border-[var(--border)] group bg-white shrink-0 opacity-80">
-            <img src={img.preview} alt="New upload" className="w-full h-full object-cover"/>
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center img-action">
-              <button onClick={(e) => { e.stopPropagation(); removeNew(i) }} className="text-white hover:text-[var(--red)]">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+          <div
+            key={i}
+            className="relative shrink-0 cursor-pointer"
+            style={{ width: 96, height: 96 }}
+            onMouseEnter={() => setHoveredNew(i)}
+            onMouseLeave={() => setHoveredNew(null)}
+            onClick={(e) => { e.stopPropagation(); setAsNewCover(i) }}
+          >
+            {/* Image frame */}
+            <div className={`w-full h-full rounded overflow-hidden border transition-all ${img.isCover ? 'border-[var(--red)] ring-2 ring-[var(--red)]/20' : 'border-[var(--border)]'}`}>
+              <img src={img.preview} alt="New upload" className="w-full h-full object-cover opacity-90" />
+              {img.isCover && <div className="absolute inset-0 bg-[var(--red)]/5 pointer-events-none" />}
+              {img.isCover && (
+                <div className="absolute bottom-1 right-1 bg-[var(--red)] text-white text-[0.5rem] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-10">Cover</div>
+              )}
             </div>
-            <div className="absolute top-1 right-1 bg-black/60 text-white text-[0.55rem] px-1 rounded font-bold uppercase shadow">New</div>
+            {/* Delete button — outside overflow:hidden */}
+            <button
+              type="button"
+              className="img-action absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-white transition-all z-40"
+              style={{
+                background: 'rgba(20,20,20,0.85)',
+                opacity: hoveredNew === i ? 1 : 0,
+                pointerEvents: hoveredNew === i ? 'auto' : 'none',
+              }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeNew(i) }}
+              title="Remove image"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         ))}
-        
+
+        {/* Add button */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); inputRef.current?.click() }}
+          className="img-action w-24 h-24 rounded border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-1 text-[var(--muted)] hover:border-[var(--red)] hover:text-[var(--red)] transition-all cursor-pointer bg-transparent"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="text-[0.65rem] font-bold uppercase tracking-wider">Add</span>
+        </button>
+
         {(!existingImages || existingImages.length === 0) && images.length === 0 && (
-          <div className="w-full flex flex-col items-center gap-2 p-4 text-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-            <p className="text-[0.8rem] text-[var(--muted)]">Click or drag images here</p>
-          </div>
+          <p className="text-[0.8rem] text-[var(--muted)] ml-2">Drag images here or click <strong>Add</strong></p>
         )}
-        
       </div>
       {(existingImages?.length > 0 || images.length > 0) && (
-        <p className="text-[0.7rem] text-[var(--muted)]">Drag files to upload more. First uploaded image defaults to Cover if none selected.</p>
+        <p className="text-[0.7rem] text-[var(--muted)]">Click an image to set as cover. Hover to reveal the delete button.</p>
       )}
     </div>
   )
@@ -230,11 +325,11 @@ function ProjectsSection({ toast, categories }) {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ title: '', categories: [], description: '', is_visible: true, review_text: '', review_rating: '' })
   const [errors, setErrors] = useState({})
-  
+
   // Image states
   const [newImages, setNewImages] = useState([])
-  const [existingImages, setExistingImages] = useState([]) 
-  
+  const [existingImages, setExistingImages] = useState([])
+
   const [saving, setSaving] = useState(false)
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -266,10 +361,10 @@ function ProjectsSection({ toast, categories }) {
 
   function openEdit(p) {
     setEditingId(p.id)
-    setForm({ 
-      title: p.title, 
-      categories: p.categories || [], 
-      description: p.description || '', 
+    setForm({
+      title: p.title,
+      categories: p.categories || [],
+      description: p.description || '',
       is_visible: p.is_visible,
       review_text: p.review_text || '',
       review_rating: p.review_rating || ''
@@ -283,7 +378,7 @@ function ProjectsSection({ toast, categories }) {
 
   function toggleCategory(slug) {
     setForm(f => ({
-      ...f, 
+      ...f,
       categories: f.categories.includes(slug) ? f.categories.filter(c => c !== slug) : [...f.categories, slug]
     }))
     setErrors(e => ({ ...e, categories: '' }))
@@ -292,20 +387,45 @@ function ProjectsSection({ toast, categories }) {
   async function setCoverImage(imageId) {
     if (!editingId) return
     try {
+      // Clear any cover in new uploads first
+      setNewImages(prev => prev.map(img => ({ ...img, isCover: false })))
+
+      // Optimistic update for instant UI feedback
+      setExistingImages(prev => prev.map(img => ({
+        ...img,
+        is_cover: img.id === imageId
+      })))
+
       await api('POST', `/api/admin/projects/${editingId}/cover`, { image_id: imageId })
-      loadExistingImages(editingId)
-      load() // refetch cover url for list
-      toast('Cover image updated')
+      await loadExistingImages(editingId)
+      await load() // refetch cover url for list
     } catch (e) { toast(e.message, 'error') }
   }
 
   async function deleteExistingImage(imageId) {
-    if (!window.confirm('Delete this image permanently?')) return
     try {
+      const wasCover = existingImages.find(img => img.id === imageId)?.is_cover
+      const remaining = existingImages.filter(img => img.id !== imageId)
+
+      // Update UI immediately (optimistic)
+      if (wasCover && remaining.length > 0) {
+        remaining[0].is_cover = true
+        setExistingImages([...remaining])
+      } else {
+        setExistingImages([...remaining])
+      }
+
+      // Now sync with server
       await api('DELETE', `/api/admin/images/${imageId}`)
-      loadExistingImages(editingId)
-      load()
-      toast('Image deleted')
+
+      // If we deleted the cover, promote the next available image on the server too
+      if (wasCover && remaining.length > 0) {
+        await api('POST', `/api/admin/projects/${editingId}/cover`, { image_id: remaining[0].id })
+      }
+
+      // Refresh from server to confirm
+      await loadExistingImages(editingId)
+      await load()
     } catch (e) { toast(e.message, 'error') }
   }
 
@@ -329,13 +449,14 @@ function ProjectsSection({ toast, categories }) {
       fd.append('display_order', editingId
         ? String(projects.find(p => p.id === editingId)?.display_order ?? projects.length)
         : String(projects.length))
-      
+
       fd.append('review_text', form.review_text.trim())
       fd.append('review_rating', form.review_rating || '')
-      
+
       if (!editingId) {
-        // If creating new project, append all new images
-        newImages.forEach((img, idx) => {
+        // If creating new project, reorder so cover is first
+        const sortedImages = [...newImages].sort((a, b) => (b.isCover ? 1 : 0) - (a.isCover ? 1 : 0))
+        sortedImages.forEach((img, idx) => {
           fd.append(`image_data_${idx}`, img.file)
         })
         await api('POST', '/api/admin/projects', fd)
@@ -345,17 +466,26 @@ function ProjectsSection({ toast, categories }) {
       } else {
         // If editing, first update project text data
         await api('PUT', `/api/admin/projects/${editingId}`, fd)
-        
+
         // Then upload any new images individually
         for (const img of newImages) {
           const imgFd = new FormData()
           imgFd.append('image_data', img.file)
-          await api('POST', `/api/admin/projects/${editingId}/images`, imgFd)
+          const res = await api('POST', `/api/admin/projects/${editingId}/images`, imgFd)
+
+          // If this new image was selected as cover, set it as cover now
+          if (img.isCover) {
+            // We need the ID of the newly uploaded image. 
+            // Let's assume the backend returns the new image ID.
+            if (res.image_id) {
+              await api('POST', `/api/admin/projects/${editingId}/cover`, { image_id: res.image_id })
+            }
+          }
         }
-        
+
         if (newImages.length > 0) toast('Project updated and images uploaded')
         else toast('Project updated')
-        
+
         setModalOpen(false)
         load()
       }
@@ -388,7 +518,6 @@ function ProjectsSection({ toast, categories }) {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="font-bebas text-[2rem] tracking-[0.04em] text-[var(--text)] leading-none">Projects</h1>
-          <p className="text-[0.82rem] text-[var(--muted)] mt-1">Manage all signage projects</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[var(--red)] text-white px-4 py-[0.6rem] rounded-lg text-[0.84rem] font-semibold hover:bg-[var(--red-dark)] hover:-translate-y-px transition-all flex-shrink-0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -442,7 +571,7 @@ function ProjectsSection({ toast, categories }) {
               {p.description && <><br /><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0, 60)}{p.description.length > 60 ? '…' : ''}</span></>}
               {p.review_text && (
                 <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-[#f39c12] font-semibold uppercase tracking-wider">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                   Has Review
                 </div>
               )}
@@ -501,9 +630,16 @@ function ProjectsSection({ toast, categories }) {
         <NcTextarea label="Description" placeholder="Short description of the project…" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
         <div className="mb-4">
           <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)] block mb-1">Project Images</label>
-          <MultiImageUpload images={newImages} setImages={setNewImages} existingImages={existingImages} onSetCover={setCoverImage} onDeleteExisting={deleteExistingImage} />
+          <MultiImageUpload
+            images={newImages}
+            setImages={setNewImages}
+            existingImages={existingImages}
+            setExistingImages={setExistingImages}
+            onSetCover={setCoverImage}
+            onDeleteExisting={deleteExistingImage}
+          />
         </div>
-        
+
         {/* Review Section */}
         <div className="pt-4 mt-4 border-t border-[var(--border)]">
           <h3 className="text-[0.8rem] font-bebas tracking-[0.06em] text-[var(--text)] mb-3">Optional Project Review</h3>
@@ -511,13 +647,13 @@ function ProjectsSection({ toast, categories }) {
             <NcTextarea label="Review Text" placeholder="What did the client say?" className="mb-0" value={form.review_text} onChange={e => setForm(f => ({ ...f, review_text: e.target.value }))} />
             <div className="flex flex-col gap-1">
               <label className="text-[0.72rem] font-semibold tracking-[0.1em] uppercase text-[var(--muted)]">Stars (1-5)</label>
-              <select 
-                value={form.review_rating} 
+              <select
+                value={form.review_rating}
                 onChange={e => setForm(f => ({ ...f, review_rating: e.target.value }))}
                 className="w-full h-[42px] bg-white border border-[var(--border)] rounded-lg text-[0.875rem] px-2 focus:border-[var(--red)] outline-none"
               >
                 <option value="">No Rating</option>
-                {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
               </select>
             </div>
           </div>
@@ -631,7 +767,6 @@ function CategoriesSection({ toast }) {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="font-bebas text-[2rem] tracking-[0.04em] text-[var(--text)] leading-none">Categories</h1>
-          <p className="text-[0.82rem] text-[var(--muted)] mt-1">Manage signage categories</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[var(--red)] text-white px-4 py-[0.6rem] rounded-lg text-[0.84rem] font-semibold hover:bg-[var(--red-dark)] hover:-translate-y-px transition-all flex-shrink-0">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -820,6 +955,13 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [toast, setToast] = useState({ msg: '', type: 'success' })
   const [categories, setCategories] = useState([])
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768)
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     api('GET', '/api/admin/categories')
@@ -840,19 +982,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[var(--bg)]">
-      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--brand-green)] flex flex-col z-[100] transition-transform duration-300`}
-        style={{ transform: sidebarOpen || window.innerWidth > 900 ? 'translateX(0)' : 'translateX(-100%)' }}
-      >
-        <div className="px-6 py-5 border-b border-white/[0.08] flex-shrink-0">
-          <div className="flex flex-col gap-1.5">
-            <div className="h-32 flex items-center">
-              <img 
-                src={logo} 
-                alt="Niddhi Creation" 
-                className="h-32 w-auto object-contain" 
-              />
-            </div>
+      <aside className={`fixed top-0 left-0 bottom-0 w-[220px] bg-[var(--brand-green)] flex flex-col z-[100] transition-transform duration-300 ${isDesktop || sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="px-6 py-5 border-b border-white/[0.08] flex-shrink-0 w-auto">
+          <div className="flex flex-col items-center w-48 pe-3">
+            <img
+              src={logo}
+              alt="Niddhi Creation"
+              className="h-28 w-auto object-contain"
+            />
           </div>
+            <img
+              src={tagline}
+              alt="Tagline"
+              className="h-8 w-64 object-contain mt-1"
+            />
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
@@ -877,21 +1020,24 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-[99] md:hidden" onClick={() => setSidebarOpen(false)} />
+      {sidebarOpen && !isDesktop && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-[150]" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <main className="flex-1 flex flex-col" style={{ marginLeft: window.innerWidth > 900 ? 220 : 0 }}>
-        <header className="sticky top-0 h-14 bg-[rgba(245,243,238,0.95)] backdrop-blur-md border-b border-[var(--border)] flex items-center gap-4 px-7 z-50 flex-shrink-0">
-          <button className="md:hidden flex flex-col gap-1 bg-transparent border-none cursor-pointer p-2" onClick={() => setSidebarOpen(s => !s)}>
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
-            <span className="block w-5 h-[2px] bg-[var(--text)] rounded" />
-          </button>
-          <span className="font-bebas text-[1.25rem] tracking-[0.06em] text-[var(--text)] flex-1">{activeLabel}</span>
-        </header>
+      {!isDesktop && !sidebarOpen && (
+        <button
+          className="fixed top-4 left-4 z-[140] w-10 h-10 bg-[var(--brand-green)] text-white rounded-full shadow-lg flex items-center justify-center border-none cursor-pointer"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+        </button>
+      )}
 
-        <div className="p-7 max-sm:p-4 flex-1">
+      <main className="flex-1 flex flex-col transition-all duration-300" style={{ paddingLeft: isDesktop ? 220 : 0 }}>
+        <div className="p-7 max-sm:p-4 pt-14 md:pt-7 flex-1">
+          {/* <header className="mb-8 flex items-center justify-between">
+            <h1 className="font-bebas text-[2.2rem] tracking-[0.04em] text-[var(--text)]">{activeLabel}</h1>
+          </header> */}
           {active === 'projects' && <ProjectsSection toast={showToast} categories={categories} />}
           {active === 'categories' && <CategoriesSection toast={showToast} />}
           {active === 'contact' && <ContactSection toast={showToast} />}

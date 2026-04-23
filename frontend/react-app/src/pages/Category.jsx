@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api/index.js'
 import logo from '../assets/logo.png'
+import tagline from '../assets/tagline.png'
 
 function timeAgo(dateStr) {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000)
@@ -147,12 +148,17 @@ export default function Category() {
       {/* Minimal navbar for category page */}
       <nav className={`fixed top-0 left-0 right-0 h-16 z-[200] border-b transition-all ${scrolled ? 'bg-[var(--brand-green)] border-white/10' : 'bg-[var(--brand-green)] backdrop-blur-sm border-white/5'}`}>
         <div className="max-w-[1200px] mx-auto px-8 h-full flex items-center justify-between">
-          <Link to="/home" className="flex items-center">
+          <Link to="/home" className="flex items-center gap-2">
             <img
               src={logo}
               alt="Niddhi Creation"
-              className="h-16 w-32 object-contain" 
+              className="h-16 w-auto object-contain" 
               style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
+            />
+            <img 
+              src={tagline} 
+              alt="Tagline" 
+              className="h-10 w-auto object-contain hidden sm:block" 
             />
           </Link>
         </div>

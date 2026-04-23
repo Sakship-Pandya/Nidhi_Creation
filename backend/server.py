@@ -81,6 +81,12 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(body)))
+        
+        # Prevent API caching by default, unless overridden by extra_headers
+        if 'application/json' in content_type:
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
 
         if extra_headers:
             for key, value in extra_headers.items():

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
 import logo from '../assets/logo.png'
+import tagline from '../assets/tagline.png'
 
 export default function AdminLogin() {
   const navigate = useNavigate()
@@ -75,19 +76,23 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-[400px]">
-        <div className="bg-white rounded-xl border-t-[3px] border-t-[var(--red)] border border-[rgba(0,0,0,0.1)] shadow-[0_4px_24px_rgba(0,0,0,0.07)] px-10 py-10">
+        <div className="bg-[var(--brand-green)] rounded-xl border-t-[3px] border-t-[var(--red)] border border-[rgba(0,0,0,0.1)] shadow-[0_4px_24px_rgba(0,0,0,0.07)] px-10 py-10">
 
           <div className="text-center mb-6">
             <div className="flex flex-col items-center gap-1">
-              <div className="flex items-center gap-2">
-                <span className='text-[var(--red)] text-3xl font-bold'>श्री</span>
+              {/* <div className="flex items-center gap-2"> */}
                 <img 
                   src={logo} 
                   alt="Niddhi Creation" 
-                  className="h-12 w-auto object-contain" 
+                  className="h-28 w-48 pe-4 pt-4 center object-contain" 
                   style={{ transform: 'scaleX(1.15)', transformOrigin: 'left' }}
                 />
-              </div>
+                <img 
+                  src={tagline} 
+                  alt="Tagline" 
+                  className="h-10 w-auto object-contain mt-[-10px] mb-4" 
+                />
+              {/* </div> */}
             </div>
           </div>
 

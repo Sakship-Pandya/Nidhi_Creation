@@ -427,7 +427,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5">
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="border border-[var(--border)] rounded-md overflow-hidden bg-white">
