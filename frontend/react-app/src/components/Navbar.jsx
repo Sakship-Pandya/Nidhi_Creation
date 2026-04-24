@@ -96,7 +96,7 @@ export default function Navbar() {
             <img
               src={tagline}
               alt="Tagline"
-              className="h-10 w-auto object-contain hidden sm:block"
+              className="h-8 ps-4 w-auto object-contain hidden sm:block"
             />
           </Link>
 
@@ -117,7 +117,7 @@ export default function Navbar() {
             >
               {/* Categories */}
               <button
-                className="flex items-center gap-1 text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all bg-transparent border-none cursor-pointer"
+                className="flex items-center gap-1 text-[0.85rem] font-medium text-white px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all bg-transparent border-none cursor-pointer"
                 onClick={() => setDropOpen(d => !d)}
                 aria-expanded={dropOpen}
               >
@@ -132,7 +132,7 @@ export default function Navbar() {
                     <li key={c.slug}>
                       <Link
                         to={`/category/${c.slug}`}
-                        className="block text-[0.84rem] text-[var(--muted)] px-4 py-2 hover:text-[var(--red)] hover:bg-black/[0.03] transition-all"
+                        className="block text-[0.84rem] text-[var(--text)] px-4 py-2 hover:text-[var(--red)] font-weight-700 hover:bg-black/[0.03] transition-all"
                         onClick={() => setDropOpen(false)}
                       >
                         {c.name}
@@ -147,7 +147,7 @@ export default function Navbar() {
             <a
               href="#reviews"
               onClick={scrollToReviews}
-              className="text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              className="text-[0.85rem] font-medium text-white px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
             >
               Reviews
             </a>
@@ -157,7 +157,7 @@ export default function Navbar() {
               <a
                 href="#contact"
                 onClick={scrollToContact}
-                className="text-[0.85rem] font-medium text-white/70 px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                className="text-[0.85rem] font-medium text-white px-3 py-2 rounded hover:text-white hover:bg-white/10 transition-all cursor-pointer"
               >
                 Contact Us
               </a>

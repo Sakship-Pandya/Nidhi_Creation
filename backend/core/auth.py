@@ -1,16 +1,33 @@
-# ══════════════════════════════════════════
-# NIDHI CREATION — core/auth.py
-# Simple in-memory session token management
-# ══════════════════════════════════════════
-
 import secrets
 import time
+import json
+import os
 
 # { token: { 'username': str, 'expires_at': float } }
 _sessions: dict = {}
 
-SESSION_DURATION = 60 * 60 * 8   # 8 hours in seconds
+SESSION_DURATION = 60 * 60 * 2   # 2 hours in seconds
 COOKIE_NAME      = 'nc_admin_session'
+SESSIONS_FILE    = 'sessions.json'
+
+def _load_sessions():
+    global _sessions
+    if os.path.exists(SESSIONS_FILE):
+        try:
+            with open(SESSIONS_FILE, 'r') as f:
+                _sessions = json.load(f)
+        except:
+            _sessions = {}
+
+def _save_sessions():
+    try:
+        with open(SESSIONS_FILE, 'w') as f:
+            json.dump(_sessions, f)
+    except:
+        pass
+
+# Initial load
+_load_sessions()
 
 
 def create_session(username: str) -> str:
@@ -20,6 +37,7 @@ def create_session(username: str) -> str:
         'username':   username,
         'expires_at': time.time() + SESSION_DURATION,
     }
+    _save_sessions()
     return token
 
 
@@ -33,18 +51,26 @@ def validate_session(token: str | None) -> str | None:
 
     session = _sessions.get(token)
     if not session:
+        print(f'[auth] session not found for token: {token[:8]}...')
         return None
 
     if time.time() > session['expires_at']:
+        print(f'[auth] session expired for token: {token[:8]}...')
         del _sessions[token]
+        _save_sessions()
         return None
 
+    print(f'[auth] session valid for user: {session["username"]}')
     return session['username']
 
 
 def delete_session(token: str):
     """Remove a session (logout)."""
     _sessions.pop(token, None)
+    _save_sessions()
+
+
+
 
 
 def get_token_from_headers(headers) -> str | None:

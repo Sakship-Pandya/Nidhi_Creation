@@ -20,18 +20,24 @@ from routes import (
 BUILD_DIR = Path(__file__).parent.parent / 'build'
 
 
+from urllib.parse import parse_qs, urlparse
+
 def dispatch(method: str, raw_path: str, body: dict, headers, respond):
     """
     Try each route handler in order.
     Each handler returns False if it doesn't own the path,
     or handles the request (calls respond) and returns None.
     """
-    # Strip query string for path matching
-    path = raw_path.split('?')[0].rstrip('/')
+    parsed_url = urlparse(raw_path)
+    path = parsed_url.path.rstrip('/')
+    query_params = parse_qs(parsed_url.query)
+    
+    # Simplify query_params: {'size': ['small']} -> {'size': 'small'}
+    params = {k: v[0] for k, v in query_params.items()}
 
     handlers = [
         lambda: admin_auth.handle(method, path, body, headers, respond),
-        lambda: projects.handle(method, path, body, headers, respond),
+        lambda: projects.handle(method, path, body, headers, respond, params=params),
         lambda: categories.handle(method, path, body, headers, respond),
         lambda: contact.handle(method, path, body, headers, respond),
         lambda: static.handle(method, path, body, headers, respond),

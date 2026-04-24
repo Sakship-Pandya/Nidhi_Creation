@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/index.js'
+import OptimizedImage from '../components/OptimizedImage'
 import logo from '../assets/logo.png'
 import tagline from '../assets/tagline.png'
 
@@ -171,7 +172,12 @@ function MultiImageUpload({ images, setImages, existingImages, setExistingImages
           >
             {/* Image frame */}
             <div className={`w-full h-full rounded overflow-hidden border transition-all ${img.is_cover ? 'border-[var(--red)] ring-2 ring-[var(--red)]/20' : 'border-[var(--border)]'}`}>
-              <img src={img.url} alt="Project image" className="w-full h-full object-cover" />
+              <OptimizedImage 
+                baseUrl={img.url} 
+                alt="Project image" 
+                className="w-full h-full object-cover" 
+                sizes="96px"
+              />
               {img.is_cover && <div className="absolute inset-0 bg-[var(--red)]/5 pointer-events-none" />}
               {img.is_cover && (
                 <div className="absolute bottom-1 right-1 bg-[var(--red)] text-white text-[0.5rem] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm z-10">Cover</div>
@@ -559,7 +565,12 @@ function ProjectsSection({ toast, categories }) {
             <td className="px-4 py-3 text-[var(--muted)] text-[0.82rem]">{p.display_order + 1}</td>
             <td className="px-4 py-3">
               {p.cover_url
-                ? <img src={p.cover_url} alt={p.title} className="w-10 h-10 rounded object-cover bg-[var(--bg)]" />
+                ? <OptimizedImage 
+                    baseUrl={p.cover_url} 
+                    alt={p.title} 
+                    className="w-10 h-10 rounded object-cover bg-[var(--bg)]" 
+                    sizes="40px"
+                  />
                 : <div className="w-10 h-10 rounded bg-[var(--bg)] border border-dashed border-[var(--border)] flex items-center justify-center text-[#ccc]">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                 </div>
@@ -569,10 +580,14 @@ function ProjectsSection({ toast, categories }) {
               <strong className="text-[var(--text)]">{p.title}</strong>
               <span className="text-[0.7rem] text-[var(--muted)] ml-2 bg-black/[0.04] px-1.5 py-0.5 rounded">{p.image_count || 0} imgs</span>
               {p.description && <><br /><span className="text-[0.78rem] text-[var(--muted)]">{p.description.slice(0, 60)}{p.description.length > 60 ? '…' : ''}</span></>}
-              {p.review_text && (
-                <div className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-[#f39c12] font-semibold uppercase tracking-wider">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                  Has Review
+              {(p.review_text || p.review_rating) && (
+                <div className="mt-1 flex items-center gap-1 text-[0.7rem] text-[#f39c12] font-semibold uppercase tracking-wider">
+                  <div className="flex gap-0.5 mr-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg key={i} width="10" height="10" viewBox="0 0 24 24" fill={i < (p.review_rating || 0) ? "currentColor" : "#ddd"}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                    ))}
+                  </div>
+                  {p.review_text ? 'Review' : 'Rating Only'}
                 </div>
               )}
             </td>
@@ -1003,7 +1018,7 @@ export default function AdminDashboard() {
             <button
               key={item.key}
               onClick={() => { setActive(item.key); setSidebarOpen(false) }}
-              className={`flex items-center gap-3 px-3 py-[0.65rem] rounded-lg w-full text-left text-[0.875rem] font-medium transition-all border-none cursor-pointer font-dm ${active === item.key ? 'bg-[var(--red)] text-white' : 'bg-transparent text-white/55 hover:bg-white/[0.07] hover:text-white/85'}`}
+              className={`flex items-center gap-3 px-3 py-[0.65rem] rounded-lg w-full text-left text-[0.875rem] font-medium transition-all border-none cursor-pointer font-dm ${active === item.key ? 'bg-[var(--red)] text-white' : 'bg-transparent text-white hover:bg-white/[0.07] hover:text-white/85'}`}
             >
               {item.icon}
               {item.label}
@@ -1035,9 +1050,6 @@ export default function AdminDashboard() {
 
       <main className="flex-1 flex flex-col transition-all duration-300" style={{ paddingLeft: isDesktop ? 220 : 0 }}>
         <div className="p-7 max-sm:p-4 pt-14 md:pt-7 flex-1">
-          {/* <header className="mb-8 flex items-center justify-between">
-            <h1 className="font-bebas text-[2.2rem] tracking-[0.04em] text-[var(--text)]">{activeLabel}</h1>
-          </header> */}
           {active === 'projects' && <ProjectsSection toast={showToast} categories={categories} />}
           {active === 'categories' && <CategoriesSection toast={showToast} />}
           {active === 'contact' && <ContactSection toast={showToast} />}

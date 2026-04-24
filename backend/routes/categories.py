@@ -197,7 +197,12 @@ def _reorder(body: dict, respond):
 
 def _is_admin(headers) -> bool:
     token = get_token_from_headers(headers)
-    return validate_session(token) is not None
+    is_valid = validate_session(token) is not None
+    if not is_valid:
+        print(f'[categories] admin check failed. token: {token[:8] if token else "None"}')
+    else:
+        print(f'[categories] admin check passed for token: {token[:8]}...')
+    return is_valid
 
 
 def _parse_id(path: str, prefix: str) -> int | None:

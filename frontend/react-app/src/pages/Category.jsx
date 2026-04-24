@@ -1,8 +1,52 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../api/index.js'
+import OptimizedImage from '../components/OptimizedImage'
 import logo from '../assets/logo.png'
 import tagline from '../assets/tagline.png'
+
+function Lightbox({ url, onClose }) {
+  const [zoom, setZoom] = useState(1)
+  
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }
+    window.addEventListener('keydown', handleEsc, true)
+    return () => window.removeEventListener('keydown', handleEsc, true)
+  }, [onClose])
+
+  const handleZoom = (e) => {
+    e.stopPropagation()
+    setZoom(prev => prev === 1 ? 2.5 : 1)
+  }
+
+  return (
+    <div 
+      className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-md flex items-center justify-center cursor-zoom-out select-none animate-in fade-in duration-300"
+      onClick={onClose}
+    >
+      <button 
+        className="absolute top-6 right-6 text-white bg-white/10 hover:bg-[var(--red)] p-3 rounded-full border-none cursor-pointer z-[1001] transition-all flex items-center justify-center"
+        onClick={onClose}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      
+      <div 
+        className={`relative transition-transform duration-300 ease-out cursor-${zoom === 1 ? 'zoom-in' : 'zoom-out'} max-w-[95vw] max-h-[95vh] flex items-center justify-center`}
+        style={{ transform: `scale(${zoom})` }}
+        onClick={handleZoom}
+      >
+        <OptimizedImage 
+          baseUrl={url} 
+          alt="Full size" 
+          className="max-w-full max-h-[95vh] object-contain shadow-2xl rounded-sm"
+          sizes="100vw"
+          style={{ pointerEvents: 'none' }}
+        />
+      </div>
+    </div>
+  )
+}
 
 function timeAgo(dateStr) {
   const seconds = Math.floor((new Date() - new Date(dateStr)) / 1000)
@@ -24,6 +68,7 @@ function ProjectModal({ project, onClose }) {
   )
   const [currentIndex, setCurrentIndex] = useState(0)
   const [contactPhone, setContactPhone] = useState('')
+  const [lightboxUrl, setLightboxUrl] = useState(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -69,20 +114,41 @@ function ProjectModal({ project, onClose }) {
         </button>
 
         {images.length > 0 ? (
-          <div className="w-full aspect-[4/3] relative overflow-hidden rounded-t-xl bg-[var(--bg)] group">
-            <img src={images[currentIndex].url} alt={project.title} className="w-full h-full object-cover" />
+          <div 
+            className="w-full aspect-[4/3] relative overflow-hidden rounded-t-xl bg-[var(--bg)] group cursor-zoom-in"
+            onClick={() => setLightboxUrl(images[currentIndex].url)}
+          >
+            <OptimizedImage 
+              baseUrl={images[currentIndex].url} 
+              alt={project.title} 
+              className="w-full h-full object-cover" 
+              sizes="(max-width: 768px) 100vw, 620px"
+            />
 
             {images.length > 1 && (
               <>
-                <button onClick={() => setCurrentIndex(i => (i - 1 + images.length) % images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setCurrentIndex(i => (i - 1 + images.length) % images.length); }} 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-[var(--red)] z-10 border-none cursor-pointer"
+                  aria-label="Previous image"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
                 </button>
-                <button onClick={() => setCurrentIndex(i => (i + 1) % images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--red)]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setCurrentIndex(i => (i + 1) % images.length); }} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center transition-all hover:bg-[var(--red)] z-10 border-none cursor-pointer"
+                  aria-label="Next image"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                 </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
                   {images.map((_, idx) => (
-                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/50'}`} />
+                    <button
+                      key={idx}
+                      onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
+                      className={`w-2 h-2 rounded-full transition-all border-none p-0 cursor-pointer ${idx === currentIndex ? 'bg-[var(--red)] scale-125' : 'bg-white/60 hover:bg-white'}`}
+                      aria-label={`Go to image ${idx + 1}`}
+                    />
                   ))}
                 </div>
               </>
@@ -92,11 +158,32 @@ function ProjectModal({ project, onClose }) {
           <div className="w-full aspect-[4/3] rounded-t-xl bg-[var(--bg)] flex items-center justify-center text-5xl text-[var(--muted)] opacity-30">◈</div>
         )}
 
+
         <div className="p-7">
           <span className="text-[0.68rem] font-semibold tracking-[0.15em] uppercase text-[var(--red)] mb-2 block">
             {(project.categories || []).join(' / ')}
           </span>
           <h2 className="font-bebas text-[1.8rem] tracking-[0.03em] text-[var(--text)] mb-3">{project.title}</h2>
+          
+          {(project.review_rating || project.review_text) && (
+            <div className="bg-[#f9f8f6] p-4 rounded-lg mb-5 border-l-4 border-[var(--red)]">
+              {project.review_rating > 0 && (
+                <div className="flex gap-1 mb-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill={i < project.review_rating ? "#f1c40f" : "#e8e4de"}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  ))}
+                </div>
+              )}
+              {project.review_text && (
+                <p className="text-[0.85rem] text-[var(--text)] italic leading-relaxed">
+                  "{project.review_text}"
+                </p>
+              )}
+            </div>
+          )}
+
           {project.description && <p className="text-[0.9rem] text-[var(--muted)] leading-relaxed mb-2">{project.description}</p>}
           {project.created_at && <p className="text-[0.78rem] text-[var(--muted)] mb-5">Added {timeAgo(project.created_at)}</p>}
           <a
@@ -109,6 +196,7 @@ function ProjectModal({ project, onClose }) {
           </a>
         </div>
       </div>
+      {lightboxUrl && <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
     </div>
   )
 }
@@ -210,7 +298,12 @@ export default function Category() {
                   onKeyDown={e => e.key === 'Enter' && setSelected(p)}
                 >
                   <div className="aspect-[4/3] relative overflow-hidden bg-[var(--bg)]">
-                    <img src={p.cover_url} alt={p.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <OptimizedImage 
+                      baseUrl={p.cover_url} 
+                      alt={p.title} 
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 400px"
+                    />
                   </div>
                   <div className="p-4">
                     <h3 className="text-[0.95rem] font-semibold text-[var(--text)] mb-1">{p.title}</h3>

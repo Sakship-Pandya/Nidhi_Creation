@@ -23,10 +23,11 @@ from database.modal import (
     get_project_images_meta, get_image_data, add_project_image,
     delete_project_image, set_cover_image, get_projects_with_reviews
 )
-from core.image_utils import process_image
+from core.image_utils import process_image_variants
 
 
-def handle(method: str, path: str, body: dict, headers, respond):
+def handle(method: str, path: str, body: dict, headers, respond, params: dict = None):
+    if params is None: params = {}
     
     # GET /api/project-reviews (Public)
     if method == 'GET' and path == '/api/project-reviews':
@@ -42,7 +43,7 @@ def handle(method: str, path: str, body: dict, headers, respond):
         if len(parts) >= 4:
             try:
                 project_id = int(parts[3])
-                _serve_cover(project_id, respond)
+                _serve_cover(project_id, respond, params)
             except ValueError:
                 respond(400, 'application/json', {'error': 'Invalid project id.'})
         else:
@@ -54,7 +55,7 @@ def handle(method: str, path: str, body: dict, headers, respond):
         try:
             image_id = _parse_id(path, '/api/images/')
             if image_id is not None:
-                _serve_image(image_id, respond)
+                _serve_image(image_id, respond, params)
             else:
                 respond(400, 'application/json', {'error': 'Invalid image id.'})
         except ValueError:
@@ -146,16 +147,20 @@ def handle(method: str, path: str, body: dict, headers, respond):
 
 # ── Handlers ─────────────────────────────
 
-def _serve_cover(project_id: int, respond):
-    image_bytes, mime = get_project_cover_image(project_id)
+def _serve_cover(project_id: int, respond, params: dict):
+    size = params.get('size', 'original')
+    fmt = params.get('format')
+    image_bytes, mime = get_project_cover_image(project_id, size, fmt)
     if image_bytes is None:
         respond(404, 'application/json', {'error': 'Image not found.'})
         return
     respond(200, mime, image_bytes, extra_headers={'Cache-Control': 'public, max-age=3600'})
 
 
-def _serve_image(image_id: int, respond):
-    image_bytes, mime = get_image_data(image_id)
+def _serve_image(image_id: int, respond, params: dict):
+    size = params.get('size', 'original')
+    fmt = params.get('format')
+    image_bytes, mime = get_image_data(image_id, size, fmt)
     if image_bytes is None:
         respond(404, 'application/json', {'error': 'Image not found.'})
         return
@@ -214,12 +219,16 @@ def _add(body: dict, respond):
         # Check if single or multiple images were uploaded
         image_idx = 0
         while True:
-            img_key = f'image_data_{image_idx}' if image_idx > 0 else 'image_data'
-            mime_key = f'image_mime_{image_idx}' if image_idx > 0 else 'image_mime'
+            # Check for both image_data (old) and image_data_X
+            img_key = f'image_data_{image_idx}'
+            if img_key not in body and image_idx == 0:
+                img_key = 'image_data'
+            
             if img_key not in body:
                 break
             image_data = body[img_key][0]
-            image_mime = body.get(mime_key, ['image/jpeg'])[0]
+            mime_key = f'{img_key}_mime'
+            image_mime = body.get(mime_key, body.get('image_mime', ['image/jpeg']))[0]
             
             if image_data:
                 # Limit raw upload size to 10MB to avoid memory issues
@@ -229,11 +238,11 @@ def _add(body: dict, respond):
 
                 # Process image (resize/compress)
                 try:
-                    processed_data, processed_mime = process_image(image_data)
-                    add_project_image(new_id, processed_data, processed_mime, is_cover=(image_idx == 0))
+                    variants = process_image_variants(image_data)
+                    add_project_image(new_id, image_data, image_mime, is_cover=(image_idx == 0), variants=variants)
                 except Exception as img_err:
                     print(f"[projects] image processing error: {img_err}")
-                    # Fallback to original if processing fails (or skip?)
+                    # Fallback to original if processing fails
                     add_project_image(new_id, image_data, image_mime, is_cover=(image_idx == 0))
             image_idx += 1
 
@@ -314,8 +323,8 @@ def _add_image(project_id: int, body: dict, respond):
 
     try:
         # Process image
-        processed_data, processed_mime = process_image(image_data)
-        new_id = add_project_image(project_id, processed_data, processed_mime)
+        variants = process_image_variants(image_data)
+        new_id = add_project_image(project_id, image_data, image_mime, variants=variants)
         respond(200, 'application/json', {'status': 'ok', 'image_id': new_id})
     except Exception as e:
         print(f'[projects] add image error: {e}')

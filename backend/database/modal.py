@@ -272,7 +272,8 @@ def get_projects_by_category(category_slug: str,
         SELECT 
             p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
             (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
-            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id,
+            p.review_text, p.review_rating
         FROM projects p
         JOIN project_categories pc ON p.id = pc.project_id
         WHERE pc.category_slug = %s {visibility_clause}
@@ -295,6 +296,8 @@ def get_projects_by_category(category_slug: str,
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
             'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
+            'review_text':   r[8],
+            'review_rating': r[9]
         }
         for r in rows
     ]
@@ -309,7 +312,8 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
         SELECT 
             p.id, p.title, p.description, p.display_order, p.is_visible, p.created_at,
             (SELECT array_agg(category_slug) FROM project_categories WHERE project_id = p.id) as categories,
-            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id
+            (SELECT id FROM project_images WHERE project_id = p.id AND is_cover = TRUE LIMIT 1) as cover_image_id,
+            p.review_text, p.review_rating
         FROM projects p
         WHERE p.is_visible = TRUE
         ORDER BY p.created_at DESC
@@ -332,6 +336,8 @@ def get_recent_projects(limit: int = 6) -> list[dict]:
             'categories':    r[6] or [],
             'has_cover':     bool(r[7]),
             'cover_url':     f'/api/project/{r[0]}/cover?v={r[7]}' if r[7] else None,
+            'review_text':   r[8],
+            'review_rating': r[9]
         }
         for r in rows
     ]
@@ -429,43 +435,90 @@ def reorder_projects(ordered_ids: list[int]):
 # PROJECT IMAGES
 # ════════════════════════════════
 
-def get_project_cover_image(project_id: int) -> tuple[bytes | None, str]:
-    """Return (image_bytes, mime_type) for the project's cover image."""
+def get_project_cover_image(project_id: int, size: str = 'original', fmt: str = None) -> tuple[bytes | None, str]:
+    """
+    Return (image_bytes, mime_type) for the project's cover image.
+    Tries to find the requested size and format in variants first.
+    """
     conn = get_connection()
     cur  = conn.cursor()
+    
+    # 1. Find the cover image ID
     cur.execute(
-        "SELECT image_data, image_mime FROM project_images WHERE project_id = %s AND is_cover = TRUE LIMIT 1",
+        "SELECT id FROM project_images WHERE project_id = %s AND is_cover = TRUE LIMIT 1",
         (project_id,)
     )
     row = cur.fetchone()
-    # Fallback to any image if no cover is set
     if not row:
+        # Fallback to first image
         cur.execute(
-            "SELECT image_data, image_mime FROM project_images WHERE project_id = %s ORDER BY display_order ASC LIMIT 1",
+            "SELECT id FROM project_images WHERE project_id = %s ORDER BY display_order ASC LIMIT 1",
             (project_id,)
         )
         row = cur.fetchone()
+    
+    if not row:
+        cur.close()
+        conn.close()
+        return None, ''
         
+    image_id = row[0]
     cur.close()
     conn.close()
-
-    if not row or row[0] is None:
-        return None, ''
-    return bytes(row[0]), row[1] or 'image/jpeg'
+    
+    return get_image_data(image_id, size, fmt)
 
 
-def get_image_data(image_id: int) -> tuple[bytes | None, str]:
-    """Return raw bytes for a specific image by ID."""
+def get_image_data(image_id: int, size: str = 'original', fmt: str = None) -> tuple[bytes | None, str]:
+    """
+    Return raw bytes for a specific image variant.
+    If fmt is provided (e.g. 'avif'), it tries to find that. 
+    Otherwise it looks for the requested size and returns the best format found.
+    """
     conn = get_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT image_data, image_mime FROM project_images WHERE id = %s", (image_id,))
+    
+    # If size is 'original' and no format is specified, we can return the master image
+    if size == 'original' and not fmt:
+        cur.execute("SELECT image_data, image_mime FROM project_images WHERE id = %s", (image_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if not row: return None, ''
+        return bytes(row[0]), row[1]
+
+    # Try to find specific variant
+    query = "SELECT image_data, image_mime FROM project_image_variants WHERE image_id = %s AND size_label = %s"
+    params = [image_id, size]
+    
+    if fmt:
+        query += " AND format = %s"
+        params.append(fmt.lower())
+    else:
+        # Prefer AVIF, then WebP, then JPEG
+        query += " ORDER BY CASE format WHEN 'avif' THEN 1 WHEN 'webp' THEN 2 ELSE 3 END ASC"
+    
+    query += " LIMIT 1"
+    
+    cur.execute(query, tuple(params))
     row = cur.fetchone()
+    
+    if not row and size != 'original':
+        # Fallback to original if requested size not found
+        cur.close()
+        conn.close()
+        return get_image_data(image_id, 'original', fmt)
+        
+    if not row:
+        # Final fallback to master image if no variants found at all
+        cur.execute("SELECT image_data, image_mime FROM project_images WHERE id = %s", (image_id,))
+        row = cur.fetchone()
+
     cur.close()
     conn.close()
-
-    if not row or row[0] is None:
-        return None, ''
-    return bytes(row[0]), row[1] or 'image/jpeg'
+    
+    if not row: return None, ''
+    return bytes(row[0]), row[1]
 
 
 def get_project_images_meta(project_id: int) -> list[dict]:
@@ -491,8 +544,8 @@ def get_project_images_meta(project_id: int) -> list[dict]:
     ]
 
 
-def add_project_image(project_id: int, image_data: bytes, image_mime: str, is_cover: bool = False):
-    """Add an image to a project. If is_cover is True, unset others."""
+def add_project_image(project_id: int, image_data: bytes, image_mime: str, is_cover: bool = False, variants: list[dict] = None):
+    """Add an image to a project and its optimized variants."""
     conn = get_connection()
     cur  = conn.cursor()
     
@@ -517,6 +570,18 @@ def add_project_image(project_id: int, image_data: bytes, image_mime: str, is_co
         (project_id, image_data, image_mime, is_cover, next_order)
     )
     new_id = cur.fetchone()[0]
+
+    # Insert variants
+    if variants:
+        for v in variants:
+            cur.execute(
+                """
+                INSERT INTO project_image_variants (image_id, size_label, format, image_data, image_mime, width, height)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (new_id, v['size'], v['format'], v['data'], v['mime'], v['width'], v['height'])
+            )
+
     conn.commit()
     cur.close()
     conn.close()

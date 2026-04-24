@@ -152,7 +152,9 @@ def _parse_multipart(raw: bytes, boundary: bytes) -> dict:
             continue
 
         if is_file:
-            result[name]        = [body]
+            result[name] = [body]
+            result[f"{name}_mime"] = [mime]
+            # Keep for backward compatibility
             result['image_mime'] = [mime]
         else:
             result[name] = [body.decode('utf-8', errors='ignore')]

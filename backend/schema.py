@@ -86,6 +86,23 @@ def create_tables():
         );
     """)
 
+    # ── Project Image Variants ────────────────
+    # Stores optimized versions (AVIF, WebP, different sizes)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS project_image_variants (
+            id            SERIAL  PRIMARY KEY,
+            image_id      INTEGER NOT NULL REFERENCES project_images(id) ON DELETE CASCADE,
+            size_label    VARCHAR(20) NOT NULL, -- 'small', 'medium', 'large', 'original'
+            format        VARCHAR(10) NOT NULL, -- 'avif', 'webp', 'jpeg'
+            image_data    BYTEA   NOT NULL,
+            image_mime    VARCHAR(50) NOT NULL,
+            width         INTEGER NOT NULL,
+            height        INTEGER NOT NULL,
+            created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_variants_image_id ON project_image_variants(image_id);")
+
     # ── Contact Info ─────────────────────────
     # Single-row table — always upsert row with id=1
     cur.execute("""
